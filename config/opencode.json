@@ -4,7 +4,7 @@
   "agent": {
     "ceo": {
       "mode": "primary",
-      "model": "opencode-go/qwen3.7-plus",
+      "model": "opencode-go/glm-5.2",
       "description": "Chief of Staff. Plans, delegates, reports. Never writes code directly. Use as default agent.",
       "temperature": 0.2,
       "steps": 60,
@@ -52,7 +52,7 @@
     "architect": {
       "mode": "subagent",
       "model": "opencode-go/qwen3.7-max",
-      "description": "System design and trade-off analysis. Expensive — call once per task, cache result.",
+      "description": "System design and trade-off analysis. Expensive \u2014 call once per task, cache result.",
       "temperature": 0.3,
       "steps": 25,
       "permission": {
