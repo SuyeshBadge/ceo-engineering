@@ -1,7 +1,8 @@
 ---
+name: commit
 description: Stage and commit the current changes following Conventional Commits. Use when ready to commit.
-agent: builder
----
+disable-model-invocation: true
+allowed-tools: Bash(git add:*) Bash(git commit:*) Bash(git status:*) Bash(git diff:*) Bash(git log:*)
 
 ## Working tree
 !`git status --short`

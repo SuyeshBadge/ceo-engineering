@@ -1,7 +1,8 @@
 ---
+name: release
 description: Cut a release: bump version, draft notes, push tag.
-agent: doc-writer
----
+disable-model-invocation: true
+allowed-tools: Bash(git tag:*) Bash(git push:*) Bash(gh release:*) Bash(npm:*)
 
 ## Recent merged PRs since last tag
 !`git log $(git describe --tags --abbrev=0 2>/dev/null || echo "HEAD~50")..HEAD --oneline`

@@ -1,7 +1,6 @@
 ---
+name: review
 description: Review uncommitted changes for quality, security, and convention adherence. Use before committing or opening a PR.
-agent: reviewer
----
 
 ## Staged changes
 !`git diff --cached`

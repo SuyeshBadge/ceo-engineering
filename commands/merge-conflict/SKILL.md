@@ -1,7 +1,8 @@
 ---
+name: merge-conflict
 description: Resolve merge conflicts intelligently. Use when git reports conflicts during merge, rebase, or pull.
-agent: tester
----
+disable-model-invocation: true
+allowed-tools: Bash(git:*) Bash(gh pr:*)
 
 ## Status
 !`git status`

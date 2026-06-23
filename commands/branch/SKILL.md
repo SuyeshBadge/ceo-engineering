@@ -1,7 +1,8 @@
 ---
+name: branch
 description: Create a new branch with proper naming convention.
-agent: builder
----
+disable-model-invocation: true
+allowed-tools: Bash(git branch:*) Bash(git checkout:*) Bash(git status:*)
 
 ## Current branch
 !`git branch --show-current`

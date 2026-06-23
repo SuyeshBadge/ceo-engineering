@@ -1,7 +1,6 @@
 ---
+name: lint
 description: Run the project's linter and report issues. Use before committing.
-agent: builder
----
 
 ## Status
 !`git status --short`

@@ -1,7 +1,6 @@
 ---
+name: typecheck
 description: Run the TypeScript / type checker and report errors. Use after any type-related change.
-agent: builder
----
 
 ## Status
 !`git status --short`

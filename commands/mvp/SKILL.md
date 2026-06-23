@@ -1,7 +1,6 @@
 ---
+name: mvp
 description: Fire-and-forget build of a greenfield MVP using the Ralph Wiggum persistent loop.
-agent: ceo
----
 
 ## Idea
 $ARGUMENTS

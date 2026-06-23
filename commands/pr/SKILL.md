@@ -1,7 +1,8 @@
 ---
+name: pr
 description: Open a pull request for the current branch. Use when ready to merge.
-agent: builder
----
+disable-model-invocation: true
+allowed-tools: Bash(gh pr create:*) Bash(git push:*) Bash(git status:*) Bash(git diff:*) Bash(git log:*)
 
 ## Branch
 !`git branch --show-current`

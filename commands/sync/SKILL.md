@@ -1,7 +1,8 @@
 ---
+name: sync
 description: Sync the current branch with the default branch (rebase preferred).
-agent: builder
----
+disable-model-invocation: true
+allowed-tools: Bash(git fetch:*) Bash(git pull:*) Bash(git rebase:*) Bash(git status:*)
 
 ## Current branch
 !`git branch --show-current`

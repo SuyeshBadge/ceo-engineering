@@ -1,7 +1,6 @@
 ---
+name: pr-review
 description: Review a pull request by URL or number. Use when reviewing someone else's code.
-agent: reviewer
----
 
 ## Target PR
 $ARGUMENTS

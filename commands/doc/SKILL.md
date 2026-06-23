@@ -1,7 +1,6 @@
 ---
+name: doc
 description: Generate or update documentation for the recent changes. Use after a feature lands.
-agent: doc-writer
----
 
 ## Recent diff
 !`git diff HEAD~1 HEAD --name-only 2>/dev/null || git diff --name-only`

@@ -1,7 +1,8 @@
 ---
+name: clean
 description: Clean up local merged branches. Use periodically to keep the working tree tidy.
-agent: builder
----
+disable-model-invocation: true
+allowed-tools: Bash(git branch:*) Bash(git tag:*) Bash(git remote:*)
 
 ## Default branch
 !`git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || echo "main"`

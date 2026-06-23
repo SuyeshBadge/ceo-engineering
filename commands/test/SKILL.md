@@ -1,7 +1,6 @@
 ---
+name: test
 description: Run targeted tests based on the recent diff. Use to verify changes don't break anything.
-agent: tester
----
 
 ## Recent diff
 !`git diff --name-only HEAD~1 HEAD 2>/dev/null || git diff --name-only`

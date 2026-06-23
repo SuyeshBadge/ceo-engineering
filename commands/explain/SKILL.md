@@ -1,7 +1,6 @@
 ---
+name: explain
 description: Explain a file, function, or concept from the codebase. Use when learning unfamiliar code.
-agent: scout
----
 
 ## Target
 $ARGUMENTS

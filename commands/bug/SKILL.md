@@ -1,7 +1,6 @@
 ---
+name: bug
 description: Bug fix with reproduction test. Use for reported bugs.
-agent: reviewer
----
 
 ## Bug report
 $ARGUMENTS

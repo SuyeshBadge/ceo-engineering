@@ -235,22 +235,30 @@ if [[ -d bin ]]; then
   ok "4 bin scripts installed"
 fi
 
-# AGENTS.md (master rules, preserves user's CodeGraph block)
+# AGENTS.md (master rules; preserves user's CodeGraph block; never duplicates)
 if [[ -f config/AGENTS.md ]]; then
-  if [[ -f "$OC_DIR/AGENTS.md" ]]; then
-    if ! grep -q "CodeGraph" "$OC_DIR/AGENTS.md" 2>/dev/null; then
-      log "Appending CEO rules to existing AGENTS.md..."
-      echo "" >> "$OC_DIR/AGENTS.md"
-      cat config/AGENTS.md >> "$OC_DIR/AGENTS.md"
-    else
-      log "Preserving CodeGraph block in AGENTS.md"
+  if [[ -f "$OC_DIR/AGENTS.md" ]] && grep -q "CEO Engineering System\|CEO's Chief of Staff" "$OC_DIR/AGENTS.md" 2>/dev/null; then
+    # Existing AGENTS.md already has the CEO rules — preserve any user codegraph block, replace CEO section
+    log "AGENTS.md already has CEO rules — preserving user's CodeGraph block, refreshing rules"
+    if grep -q "CodeGraph" "$OC_DIR/AGENTS.md" 2>/dev/null; then
       awk '/<!-- CODEGRAPH_START -->/,/<!-- CODEGRAPH_END -->/' "$OC_DIR/AGENTS.md" > /tmp/cg-block.md
       cp config/AGENTS.md "$OC_DIR/AGENTS.md"
       echo "" >> "$OC_DIR/AGENTS.md"
       cat /tmp/cg-block.md >> "$OC_DIR/AGENTS.md"
+    else
+      cp config/AGENTS.md "$OC_DIR/AGENTS.md"
     fi
   else
-    cp config/AGENTS.md "$OC_DIR/AGENTS.md"
+    # No existing CEO rules, or no AGENTS.md — overwrite cleanly
+    log "Installing AGENTS.md (CEO constitution)"
+    if [[ -f "$OC_DIR/AGENTS.md" ]] && grep -q "CodeGraph" "$OC_DIR/AGENTS.md" 2>/dev/null; then
+      awk '/<!-- CODEGRAPH_START -->/,/<!-- CODEGRAPH_END -->/' "$OC_DIR/AGENTS.md" > /tmp/cg-block.md
+      cp config/AGENTS.md "$OC_DIR/AGENTS.md"
+      echo "" >> "$OC_DIR/AGENTS.md"
+      cat /tmp/cg-block.md >> "$OC_DIR/AGENTS.md"
+    else
+      cp config/AGENTS.md "$OC_DIR/AGENTS.md"
+    fi
   fi
   ok "AGENTS.md installed"
 fi

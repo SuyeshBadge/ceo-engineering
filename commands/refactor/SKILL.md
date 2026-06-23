@@ -1,7 +1,6 @@
 ---
+name: refactor
 description: Behavior-preserving refactor. Use for code cleanup that doesn't change behavior.
-agent: reviewer
----
 
 ## Refactor scope
 $ARGUMENTS

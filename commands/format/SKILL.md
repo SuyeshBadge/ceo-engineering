@@ -1,7 +1,6 @@
 ---
+name: format
 description: Format code in the working tree. Use after any edit.
-agent: builder
----
 
 ## Status
 !`git status --short`

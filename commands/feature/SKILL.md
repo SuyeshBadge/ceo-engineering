@@ -1,7 +1,6 @@
 ---
+name: feature
 description: Full feature implementation pipeline. Use for new features spanning multiple files.
-agent: ceo
----
 
 ## Feature request
 $ARGUMENTS

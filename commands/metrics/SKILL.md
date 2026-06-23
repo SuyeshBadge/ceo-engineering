@@ -1,7 +1,6 @@
 ---
+name: metrics
 description: Show session cost, throughput, loop health. Addictive — shows your productivity dashboard.
-agent: ceo
----
 
 ## Period
 $ARGUMENTS

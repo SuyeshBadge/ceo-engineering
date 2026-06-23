@@ -1,7 +1,8 @@
 ---
+name: hotfix
 description: Emergency fix branch from main. Use for production incidents.
-agent: builder
----
+disable-model-invocation: true
+allowed-tools: Bash(git:*) Bash(gh pr:*)
 
 ## Current branch
 !`git branch --show-current`

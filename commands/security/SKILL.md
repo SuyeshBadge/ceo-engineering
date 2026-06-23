@@ -1,7 +1,6 @@
 ---
+name: security
 description: Security audit of the recent changes. Use before merging auth/payments/PII code.
-agent: reviewer
----
 
 ## Recent diff
 !`git diff HEAD~1 HEAD 2>/dev/dev/null || git diff`

@@ -1,7 +1,6 @@
 ---
+name: changelog
 description: Update CHANGELOG.md with recent merged changes. Use before a release.
-agent: doc-writer
----
 
 ## Commits since last tag
 !`git log $(git describe --tags --abbrev=0 2>/dev/null || echo "HEAD~50")..HEAD --oneline`
