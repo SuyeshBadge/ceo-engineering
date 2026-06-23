@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # CEO Engineering System - One-Command Setup
-# Installs the CEO agent fleet, skills, hooks, and config for both opencode and Claude Code
+# Installs EVERYTHING: agents, skills, hooks, MCPs, plugins, RTK, codegraph, agent-browser, Chrome.
+# Idempotent — safe to re-run. Detects what's missing, installs only gaps.
 # Usage: curl -fsSL https://raw.githubusercontent.com/SuyeshBadge/ceo-engineering/main/setup.sh | bash
-#    or: ./setup.sh
+#    or: ./setup.sh [--update] [--skip-rtk] [--skip-mcp] [--skip-chrome]
 
 set -euo pipefail
 
@@ -13,355 +14,384 @@ OC_DIR="$HOME/.config/opencode"
 CC_DIR="$HOME/.claude"
 BACKUP_DIR="$HOME/.config/opencode.backup.$(date +%Y%m%d-%H%M%S)"
 
-# Colors
-RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
+SKIP_RTK=0
+SKIP_MCP=0
+SKIP_CHROME=0
+for arg in "$@"; do
+  case "$arg" in
+    --update) ;;  # alias for idempotent re-run
+    --skip-rtk) SKIP_RTK=1 ;;
+    --skip-mcp) SKIP_MCP=1 ;;
+    --skip-chrome) SKIP_CHROME=1 ;;
+    --help|-h)
+      echo "Usage: setup.sh [--skip-rtk] [--skip-mcp] [--skip-chrome]"
+      echo "  Idempotent: re-run anytime to fill gaps."
+      exit 0
+      ;;
+  esac
+done
 
-log()   { echo -e "${BLUE}▸${NC} $*"; }
-ok()    { echo -e "${GREEN}✓${NC} $*"; }
-warn()  { echo -e "${YELLOW}⚠${NC} $*"; }
-err()   { echo -e "${RED}✗${NC} $*"; }
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[1;34m'; BOLD='\033[1m'; NC='\033[0m'
+log()  { echo -e "${BLUE}▸${NC} $*"; }
+ok()   { echo -e "${GREEN}✓${NC} $*"; }
+warn() { echo -e "${YELLOW}⚠${NC} $*"; }
+err()  { echo -e "${RED}✗${NC} $*"; }
+hdr()  { echo -e "\n${BOLD}── $* ──${NC}"; }
 
-# 1. Detect environment
-log "Detecting environment..."
-echo "  OS: $(uname -s)"
-echo "  Shell: $SHELL"
-echo "  opencode dir: $OC_DIR"
-echo "  Claude Code dir: $CC_DIR"
-echo
-
-# Helper: install skills from skills.sh via the npx CLI
-install_skills_from_manifest() {
-  local target_dir="$1"
-  local manifest="skills-manifest.json"
-  [[ ! -f "$manifest" ]] && return 0
-
-  if ! command -v npx >/dev/null 2>&1; then
-    warn "npx not found — skipping skills.sh install. Run manually with: npx skills add <owner/repo>"
-    return 0
-  fi
-
-  log "Installing curated skills from skills.sh (see skills-manifest.json)..."
-
-  # Parse manifest and install tier-1 skills
-  local count=0
-  local failed=0
-  while IFS= read -r repo; do
-    [[ -z "$repo" ]] && continue
-    printf "  %-50s " "$repo"
-    if npx --yes skills add "$repo" >/dev/null 2>&1; then
-      echo -e "${GREEN}✓${NC}"
-      ((count++))
-    else
-      # Try alternative: direct git clone into the right path
-      local skill_name=$(basename "$repo")
-      local clone_url="https://github.com/$repo"
-      local target_skill_dir="$target_dir/skills/$skill_name"
-      if [[ -d "$target_skill_dir/SKILL.md" ]]; then
-        echo -e "${YELLOW}✓ (cached)${NC}"
-        ((count++))
-      elif git clone --depth 1 "$clone_url" "$TMP_DIR/skills-clone-$skill_name" >/dev/null 2>&1; then
-        # Try to find SKILL.md files and copy them
-        if find "$TMP_DIR/skills-clone-$skill_name" -name "SKILL.md" 2>/dev/null | head -1 > /dev/null; then
-          echo -e "${YELLOW}⚠ partial (manual install may be needed)${NC}"
-        else
-          echo -e "${YELLOW}⚠ (no SKILL.md found in repo)${NC}"
-        fi
-        ((failed++))
-      else
-        echo -e "${RED}✗ (install manually: npx skills add $repo)${NC}"
-        ((failed++))
-      fi
-    fi
-  done < <(jq -r '.categories | to_entries[] | select(.value.install == true) | .value.skills[].name' "$manifest" 2>/dev/null)
-
-  if [[ $count -gt 0 ]]; then
-    ok "Installed $count skills from skills.sh"
-  fi
-  if [[ $failed -gt 0 ]]; then
-    warn "$failed skills need manual install. See: https://skills.sh"
-    echo "  Manual install: npx skills add <owner/repo>"
+step() {
+  local name="$1"; shift
+  if "$@" >/tmp/ceo-step.log 2>&1; then
+    ok "$name"
+  else
+    local code=$?
+    err "$name (exit $code)"
+    sed 's/^/    /' /tmp/ceo-step.log | head -10
+    return $code
   fi
 }
 
-# 2. Check for required tools
-log "Checking dependencies..."
-for tool in curl git jq; do
-  if ! command -v "$tool" >/dev/null 2>&1; then
+need() { command -v "$1" >/dev/null 2>&1; }
+
+# ─── 1. Banner ────────────────────────────────────────────────────────────
+echo -e "${BOLD}"
+echo "  ╭───────────────────────────────────────────────╮"
+echo "  │   CEO Engineering System — One-Command Setup  │"
+echo "  ╰───────────────────────────────────────────────╯"
+echo -e "${NC}"
+
+# ─── 2. OS / shell ────────────────────────────────────────────────────────
+log "OS:     $(uname -s) $(uname -m)"
+log "Shell:  ${SHELL:-unknown}"
+log "Home:   $HOME"
+log "opencode: ${OC_DIR}"
+log "Claude:   ${CC_DIR}"
+echo
+
+# ─── 3. Required tools ────────────────────────────────────────────────────
+hdr "1/9 — Required tools"
+for tool in curl git jq npm; do
+  if need "$tool"; then
+    ok "$tool: $(command -v "$tool")"
+  else
     err "Missing required tool: $tool"
     echo "  Install with: brew install $tool"
     exit 1
   fi
 done
-ok "Dependencies OK (curl, git, jq)"
-echo
 
-# 3. Backup existing configs
+# ─── 4. Backup ────────────────────────────────────────────────────────────
+hdr "2/9 — Backup"
 if [[ -d "$OC_DIR" ]] && [[ -f "$OC_DIR/opencode.json" ]]; then
-  log "Backing up existing opencode config to $BACKUP_DIR"
+  log "Backing up to $BACKUP_DIR"
   cp -r "$OC_DIR" "$BACKUP_DIR"
   ok "Backup created"
+else
+  log "No existing opencode config — fresh install"
 fi
 echo
 
-# 4. Detect which editors to set up
-SETUP_OPENCODE=false
-SETUP_CLAUDE=false
-
-if command -v opencode >/dev/null 2>&1 || [[ -d "$OC_DIR" ]]; then
-  SETUP_OPENCODE=true
-fi
-if command -v claude >/dev/null 2>&1 || [[ -d "$CC_DIR" ]]; then
-  SETUP_CLAUDE=true
-fi
-
-if [[ "$SETUP_OPENCODE" == false ]] && [[ "$SETUP_CLAUDE" == false ]]; then
-  warn "Neither opencode nor Claude Code detected."
-  echo "  Install one of them first:"
-  echo "    opencode:  https://opencode.ai/docs/"
-  echo "    Claude:    https://claude.com/product/claude-code"
-  echo
-  read -p "Continue anyway and set up configs for future installs? [y/N] " -n 1 -r
-  echo
-  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    exit 0
-  fi
-  SETUP_OPENCODE=true
-  SETUP_CLAUDE=true
-fi
-
-log "Will set up: $([ "$SETUP_OPENCODE" == true ] && echo "opencode" || echo "") $([ "$SETUP_CLAUDE" == true ] && echo "Claude Code" || echo "")"
-echo
-
-# 5. Create directories
-log "Creating directories..."
-mkdir -p "$OC_DIR/agents" "$OC_DIR/skills" "$OC_DIR/plugins" "$OC_DIR/hooks" "$OC_DIR/loops"
-mkdir -p "$CC_DIR/agents" "$CC_DIR/skills" "$CC_DIR/hooks"
-ok "Directories created"
-echo
-
-# 6. Download and install
-log "Downloading CEO Engineering System..."
-
+# ─── 5. Download repo ─────────────────────────────────────────────────────
+hdr "3/9 — Download CEO Engineering System"
 TMP_DIR=$(mktemp -d)
 trap "rm -rf $TMP_DIR" EXIT
 
 if [[ -d ".git" ]] && [[ -f "./setup.sh" ]]; then
-  log "Installing from local clone..."
-  cp -r ./* "$TMP_DIR/" 2>/dev/null || true
+  log "Installing from local clone: $(pwd)"
+  cp -r . "$TMP_DIR/"
 else
-  log "Cloning from $REPO_URL..."
-  git clone --depth 1 "$REPO_URL" "$TMP_DIR/repo" 2>/dev/null || {
-    err "Failed to clone repo. Check your internet connection."
+  log "Cloning from $REPO_URL ..."
+  if ! git clone --depth 1 "$REPO_URL" "$TMP_DIR/repo" 2>/dev/null; then
+    err "Clone failed — check internet"
     exit 1
-  }
-  cp -r "$TMP_DIR/repo"/* "$TMP_DIR/"
+  fi
+  cp -r "$TMP_DIR/repo"/. "$TMP_DIR/"
 fi
-
 cd "$TMP_DIR"
-ok "Downloaded"
+ok "Repo ready: $(git rev-parse --short HEAD 2>/dev/null || echo 'local')"
 echo
 
-# 6.5. Install RTK (Rust Token Killer) — biggest token savings win
-if command -v brew >/dev/null 2>&1; then
-  if ! command -v rtk >/dev/null 2>&1; then
-    log "Installing RTK (Rust Token Killer) — 60-90% bash savings..."
-    if brew install rtk 2>/dev/null; then
-      ok "RTK installed"
+# ─── 6. RTK (Rust Token Killer) ───────────────────────────────────────────
+hdr "4/9 — RTK (Rust Token Killer)"
+if [[ $SKIP_RTK -eq 0 ]]; then
+  if need rtk; then
+    ok "rtk already installed: $(rtk --version 2>/dev/null | head -1)"
+  else
+    log "Installing rtk via npm..."
+    if npm install -g rtk >/dev/null 2>&1; then
+      ok "rtk installed"
     else
-      warn "RTK install via brew failed — install manually: https://github.com/rtk-ai/rtk"
+      warn "rtk npm install failed — trying brew"
+      if need brew; then
+        brew install rtk >/dev/null 2>&1 && ok "rtk installed (brew)" || warn "rtk install failed (continuing)"
+      else
+        warn "rtk install failed (continuing without it)"
+      fi
+    fi
+  fi
+  # Wire rtk opencode hook
+  if need rtk; then
+    rtk init -g --opencode >/dev/null 2>&1 && ok "rtk opencode hook wired" || warn "rtk opencode hook failed"
+    rtk init -g >/dev/null 2>&1 && ok "rtk claude-code hook wired" || warn "rtk claude-code hook skipped"
+  fi
+else
+  log "skipped (--skip-rtk)"
+fi
+echo
+
+# ─── 7. codegraph (knowledge graph for any codebase) ──────────────────────
+hdr "5/9 — codegraph"
+if need codegraph; then
+  ok "codegraph: $(codegraph --version 2>/dev/null | head -1)"
+else
+  log "Installing codegraph via npm..."
+  if npm install -g @colbymchenry/codegraph >/dev/null 2>&1; then
+    ok "codegraph installed"
+  else
+    warn "codegraph npm install failed — install manually: https://www.npmjs.com/package/@colbymchenry/codegraph"
+  fi
+fi
+echo
+
+# ─── 8. agent-browser (Vercel Labs) + Chrome ──────────────────────────────
+hdr "6/9 — agent-browser (Vercel Labs)"
+if need agent-browser; then
+  AB_VER=$(agent-browser --version 2>/dev/null | head -1)
+  ok "agent-browser: $AB_VER"
+  if [[ $SKIP_CHROME -eq 0 ]] && ! agent-browser doctor 2>/dev/null | grep -q "Launch test.*pass"; then
+    log "Chrome missing — running 'agent-browser install'..."
+    agent-browser install >/dev/null 2>&1 && ok "Chrome installed" || warn "Chrome install failed (run 'agent-browser install' manually)"
+  fi
+else
+  log "Installing agent-browser via npm..."
+  if npm install -g agent-browser >/dev/null 2>&1; then
+    ok "agent-browser installed"
+    if [[ $SKIP_CHROME -eq 0 ]]; then
+      log "Downloading Chrome for Testing (first run)..."
+      agent-browser install >/dev/null 2>&1 && ok "Chrome downloaded" || warn "Chrome download failed (run 'agent-browser install' manually)"
     fi
   else
-    ok "RTK already installed"
+    warn "agent-browser install failed — install manually: https://www.npmjs.com/package/agent-browser"
   fi
 fi
+echo
 
-# Initialize RTK hook for whichever editors we found
-if command -v rtk >/dev/null 2>&1; then
-  if [[ "$SETUP_OPENCODE" == true ]]; then
-    rtk init -g --opencode 2>/dev/null && ok "RTK opencode hook installed" || warn "RTK opencode hook failed"
-  fi
-  if [[ "$SETUP_CLAUDE" == true ]]; then
-    rtk init -g 2>/dev/null && ok "RTK Claude Code hook installed" || warn "RTK Claude Code hook failed"
-  fi
-  echo
+# ─── 9. opencode dirs + agents + skills + hooks + loops + bin ─────────────
+hdr "7/9 — opencode config"
+mkdir -p "$OC_DIR"/{agents,skills,plugins,hooks,loops,bin,logs}
+
+if [[ -d agents ]]; then
+  log "Installing 9 agents..."
+  cp agents/*.md "$OC_DIR/agents/"
+  ok "9 agents installed"
 fi
 
-# 7. Install opencode config
-if [[ "$SETUP_OPENCODE" == true ]]; then
-  log "Installing opencode config..."
+if [[ -d skills ]]; then
+  log "Installing 23 built-in skills..."
+  for skill_dir in skills/*/; do
+    skill_name=$(basename "$skill_dir")
+    mkdir -p "$OC_DIR/skills/$skill_name"
+    cp "$skill_dir/SKILL.md" "$OC_DIR/skills/$skill_name/" 2>/dev/null || true
+  done
+  ok "23 built-in skills installed"
+fi
 
-  # Master rules (preserving CodeGraph if present)
+if [[ -d hooks ]]; then
+  log "Installing hook scripts..."
+  cp hooks/*.sh "$OC_DIR/hooks/"
+  chmod +x "$OC_DIR/hooks/"*.sh
+  ok "5 hooks installed"
+fi
+
+if [[ -d loops ]]; then
+  log "Installing loop scripts..."
+  cp loops/*.sh "$OC_DIR/loops/"
+  chmod +x "$OC_DIR/loops/"*.sh
+  ok "3 loops installed"
+fi
+
+if [[ -d bin ]]; then
+  log "Installing bin scripts (output format library)..."
+  cp bin/*.sh "$OC_DIR/bin/"
+  chmod +x "$OC_DIR/bin/"*.sh
+  ok "4 bin scripts installed"
+fi
+
+# AGENTS.md (master rules, preserves user's CodeGraph block)
+if [[ -f config/AGENTS.md ]]; then
   if [[ -f "$OC_DIR/AGENTS.md" ]]; then
     if ! grep -q "CodeGraph" "$OC_DIR/AGENTS.md" 2>/dev/null; then
-      log "Existing AGENTS.md found, appending CEO rules..."
+      log "Appending CEO rules to existing AGENTS.md..."
       echo "" >> "$OC_DIR/AGENTS.md"
       cat config/AGENTS.md >> "$OC_DIR/AGENTS.md"
     else
-      log "CodeGraph detected in existing AGENTS.md, preserving it..."
-      echo "" > "$OC_DIR/AGENTS.md.new"
-      cat config/AGENTS.md >> "$OC_DIR/AGENTS.md.new"
-      # Preserve CodeGraph block
-      awk '/<!-- CODEGRAPH_START -->/,/<!-- CODEGRAPH_END -->/' "$OC_DIR/AGENTS.md" >> "$OC_DIR/AGENTS.md.new"
-      mv "$OC_DIR/AGENTS.md.new" "$OC_DIR/AGENTS.md"
+      log "Preserving CodeGraph block in AGENTS.md"
+      awk '/<!-- CODEGRAPH_START -->/,/<!-- CODEGRAPH_END -->/' "$OC_DIR/AGENTS.md" > /tmp/cg-block.md
+      cp config/AGENTS.md "$OC_DIR/AGENTS.md"
+      echo "" >> "$OC_DIR/AGENTS.md"
+      cat /tmp/cg-block.md >> "$OC_DIR/AGENTS.md"
     fi
   else
     cp config/AGENTS.md "$OC_DIR/AGENTS.md"
   fi
   ok "AGENTS.md installed"
-
-  # Merge opencode.json (preserve existing MCP/agents)
-  if [[ -f "$OC_DIR/opencode.json" ]]; then
-    log "Merging opencode.json with existing config..."
-    # Backup and merge
-    cp "$OC_DIR/opencode.json" "$OC_DIR/opencode.json.bak"
-    # Use jq to merge - existing wins on conflicts
-    jq -s '.[0] * .[1]' "$OC_DIR/opencode.json" config/opencode.json > "$OC_DIR/opencode.json.merged" 2>/dev/null || {
-      warn "jq merge failed, falling back to manual merge"
-      cp config/opencode.json "$OC_DIR/opencode.json"
-    }
-    [[ -f "$OC_DIR/opencode.json.merged" ]] && mv "$OC_DIR/opencode.json.merged" "$OC_DIR/opencode.json"
-  else
-    cp config/opencode.json "$OC_DIR/opencode.json"
-  fi
-  ok "opencode.json installed"
-
-  # Agents
-  log "Installing opencode agents..."
-  cp agents/*.md "$OC_DIR/agents/"
-  ok "9 agents installed"
-
-  # Skills
-  log "Installing opencode skills..."
-  for skill_dir in skills/*/; do
-    skill_name=$(basename "$skill_dir")
-    mkdir -p "$OC_DIR/skills/$skill_name"
-    cp "$skill_dir/SKILL.md" "$OC_DIR/skills/$skill_name/"
-  done
-  ok "23 local skills installed"
-
-  # Skills from skills.sh (curated)
-  install_skills_from_manifest "$OC_DIR"
-
-  # Hooks
-  log "Installing hook scripts..."
-  cp hooks/*.sh "$OC_DIR/hooks/"
-  chmod +x "$OC_DIR/hooks/"*.sh
-  ok "Hooks installed"
-
-  # Loops
-  log "Installing loop scripts..."
-  cp loops/*.sh "$OC_DIR/loops/"
-  chmod +x "$OC_DIR/loops/"*.sh
-  ok "Loops installed"
-
-  # Bin (output format library, demo, status)
-  log "Installing bin scripts (output format library)..."
-  mkdir -p "$OC_DIR/bin"
-  cp bin/*.sh "$OC_DIR/bin/"
-  chmod +x "$OC_DIR/bin/"*.sh
-  ok "Bin installed (format.sh, demo.sh, status.sh, present.sh)"
-
-  echo
 fi
 
-# 8. Install Claude Code config
-if [[ "$SETUP_CLAUDE" == true ]]; then
-  log "Installing Claude Code config..."
+# safety-hooks plugin (wires hooks/*.sh into opencode's tool/session events)
+if [[ -f plugins/safety-hooks.ts ]]; then
+  cp plugins/safety-hooks.ts "$OC_DIR/plugins/safety-hooks.ts"
+  ok "safety-hooks plugin installed"
+fi
+echo
 
+# ─── 10. opencode.json: install base + merge MCPs ─────────────────────────
+hdr "8/9 — opencode.json + MCPs"
+cp config/opencode.json "$OC_DIR/opencode.json.bak" 2>/dev/null || true
+cp config/opencode.json "$OC_DIR/opencode.json"
+ok "opencode.json base installed"
+
+if [[ $SKIP_MCP -eq 0 ]] && [[ -f config/mcp.json ]] && need jq; then
+  log "Merging efficiency MCPs (codegraph, context7, octocode, gh-grep, agent-browser, filesystem)..."
+  local_mcps=$(jq '.mcp // {} | with_entries(select(.key | startswith("_") | not))' config/mcp.json 2>/dev/null || echo "{}")
+  existing_mcps=$(jq '.mcp // {} | with_entries(select(.key | startswith("_") | not))' "$OC_DIR/opencode.json" 2>/dev/null || echo "{}")
+  merged_mcps=$(jq -n --argjson a "$existing_mcps" --argjson b "$local_mcps" '$a * $b')
+  jq --argjson m "$merged_mcps" '.mcp = $m' "$OC_DIR/opencode.json" > "$OC_DIR/opencode.json.tmp" && mv "$OC_DIR/opencode.json.tmp" "$OC_DIR/opencode.json"
+  ok "Efficiency MCPs merged"
+else
+  warn "MCPs skipped (--skip-mcp or jq/mcp.json missing)"
+fi
+echo
+
+# ─── 11. Curated skills from skills.sh ────────────────────────────────────
+hdr "9/9 — Curated skills from skills.sh"
+install_skills_from_manifest() {
+  [[ -f skills-manifest.json ]] || return 0
+  need npx || { warn "npx missing — skipping skills.sh install"; return 0; }
+
+  local ok_count=0 fail_count=0
+
+  # 1) Bundled skills (ship with the repo, no skills.sh install)
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    local name=$(echo "$line" | cut -f1)
+    local path=$(echo "$line" | cut -f2)
+    printf "  [bundled] %-30s " "$name"
+    if [[ -f "$path" ]]; then
+      local skill_dir="$OC_DIR/skills/$name"
+      mkdir -p "$skill_dir"
+      cp "$path" "$skill_dir/SKILL.md"
+      echo -e "${GREEN}✓${NC}"
+      ((ok_count++))
+    else
+      echo -e "${RED}✗ not found: $path${NC}"
+      ((fail_count++))
+    fi
+  done < <(jq -r '.categories | to_entries[] | select(.value.bundled == true and .value.install == true) | .value.skills[] | "\(.name)\t\(.path)"' skills-manifest.json 2>/dev/null)
+
+  # 2) Skills with binary deps (install binary if missing, then skill)
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    local name=$(echo "$line" | cut -f1)
+    local binary=$(echo "$line" | cut -f2)
+    local hint=$(echo "$line" | cut -f3-)
+    printf "  [binary]  %-30s " "$name"
+    if need "$binary"; then
+      echo -e "${GREEN}✓ ($binary present)${NC}"
+      ((ok_count++))
+    else
+      echo -e "${YELLOW}⚠ run: $hint${NC}"
+      ((fail_count++))
+    fi
+  done < <(jq -r '.categories | to_entries[] | select(.value.install == true) | .value.skills[] | select(.binary != null) | "\(.name)\t\(.binary)\t\(.install_hint // "")"' skills-manifest.json 2>/dev/null)
+
+  # 3) skills.sh repos
+  while IFS= read -r repo; do
+    [[ -z "$repo" ]] && continue
+    printf "  [skills.sh] %-26s " "$repo"
+    if npx --yes skills add "$repo" >/dev/null 2>&1; then
+      echo -e "${GREEN}✓${NC}"
+      ((ok_count++))
+    else
+      echo -e "${YELLOW}⚠ manual: npx skills add $repo${NC}"
+      ((fail_count++))
+    fi
+  done < <(jq -r '.categories | to_entries[] | select(.value.bundled != true and .value.install == true) | .value.skills[] | select(.binary == null) | .name' skills-manifest.json 2>/dev/null)
+
+  ok "$ok_count ready, $fail_count need manual install (see above)"
+}
+install_skills_from_manifest
+echo
+
+# ─── 12. Claude Code config (optional) ────────────────────────────────────
+if [[ -d "$CC_DIR" ]] || need claude; then
+  hdr "Claude Code (optional)"
+  mkdir -p "$CC_DIR/agents" "$CC_DIR/skills" "$CC_DIR/hooks"
   # Symlink AGENTS.md → CLAUDE.md
   if [[ -f "$OC_DIR/AGENTS.md" ]] && [[ ! -L "$CC_DIR/CLAUDE.md" ]]; then
     ln -sf "$OC_DIR/AGENTS.md" "$CC_DIR/CLAUDE.md"
-    ok "CLAUDE.md → AGENTS.md symlink created"
+    ok "CLAUDE.md → AGENTS.md"
   fi
-
-  # Claude Code agents (different frontmatter schema)
-  log "Installing Claude Code agents..."
-  for agent_file in agents/*.md; do
-    agent_name=$(basename "$agent_file" .md)
-    # Convert opencode frontmatter to Claude Code format
-    # (we ship both formats; CC version lives in agents-cc/)
-    if [[ -f "agents-cc/$agent_name.md" ]]; then
-      cp "agents-cc/$agent_name.md" "$CC_DIR/agents/$agent_name.md"
-    else
-      # Fallback: symlink to opencode version (most fields work)
-      ln -sf "$OC_DIR/agents/$agent_name.md" "$CC_DIR/agents/$agent_name.md"
-    fi
-  done
-  ok "Claude Code agents installed"
-
-  # Skills (symlink to opencode - Agent Skills standard)
-  log "Symlinking skills to Claude Code..."
+  # CC-specific agents
+  if [[ -d agents-cc ]]; then
+    for f in agents-cc/*.md; do
+      [[ -f "$f" ]] && cp "$f" "$CC_DIR/agents/$(basename "$f")"
+    done
+    ok "Claude Code agents installed"
+  fi
+  # Symlink skills
   for skill_dir in "$OC_DIR/skills"/*/; do
     skill_name=$(basename "$skill_dir")
     [[ -L "$CC_DIR/skills/$skill_name" ]] && continue
     ln -sf "$skill_dir" "$CC_DIR/skills/$skill_name"
   done
-  ok "Skills symlinked"
-
-  # Hooks
-  log "Installing Claude Code settings.json with hooks..."
-  if [[ -f "$CC_DIR/settings.json" ]]; then
-    # Merge settings, preserving user allowlist
-    if command -v jq >/dev/null 2>&1; then
-      jq -s '.[0] * .[1]' "$CC_DIR/settings.json" config/settings.json > "$CC_DIR/settings.json.new" 2>/dev/null || {
-        cp config/settings.json "$CC_DIR/settings.json"
-      }
-      [[ -f "$CC_DIR/settings.json.new" ]] && mv "$CC_DIR/settings.json.new" "$CC_DIR/settings.json"
+  ok "Skills symlinked to Claude Code"
+  # Settings + hooks
+  if [[ -f config/settings.json ]]; then
+    if [[ -f "$CC_DIR/settings.json" ]] && need jq; then
+      jq -s '.[0] * .[1]' "$CC_DIR/settings.json" config/settings.json > "$CC_DIR/settings.json.new" 2>/dev/null \
+        && mv "$CC_DIR/settings.json.new" "$CC_DIR/settings.json" \
+        || cp config/settings.json "$CC_DIR/settings.json"
     else
       cp config/settings.json "$CC_DIR/settings.json"
     fi
-  else
-    cp config/settings.json "$CC_DIR/settings.json"
+    ok "Claude Code settings + hooks installed"
   fi
-  cp hooks/*.sh "$CC_DIR/hooks/" 2>/dev/null || cp "$OC_DIR/hooks/"*.sh "$CC_DIR/hooks/"
-  chmod +x "$CC_DIR/hooks/"*.sh
-  ok "Claude Code config installed"
+  cp hooks/*.sh "$CC_DIR/hooks/" 2>/dev/null && chmod +x "$CC_DIR/hooks/"*.sh
+  ok "Claude Code hook scripts installed"
   echo
 fi
 
-# 9. Verify
-log "Verifying installation..."
-echo "  opencode agents: $(ls -1 "$OC_DIR/agents" 2>/dev/null | wc -l | tr -d ' ')"
-echo "  opencode skills: $(ls -1 "$OC_DIR/skills" 2>/dev/null | wc -l | tr -d ' ')"
-echo "  hooks: $(ls -1 "$OC_DIR/hooks" 2>/dev/null | wc -l | tr -d ' ')"
-echo "  loops: $(ls -1 "$OC_DIR/loops" 2>/dev/null | wc -l | tr -d ' ')"
+# ─── 13. Verify ───────────────────────────────────────────────────────────
+hdr "Verify"
+echo "  opencode agents:  $(ls -1 "$OC_DIR/agents" 2>/dev/null | wc -l | tr -d ' ')"
+echo "  opencode skills:  $(ls -1 "$OC_DIR/skills" 2>/dev/null | wc -l | tr -d ' ')"
+echo "  hooks:            $(ls -1 "$OC_DIR/hooks" 2>/dev/null | wc -l | tr -d ' ')"
+echo "  loops:            $(ls -1 "$OC_DIR/loops" 2>/dev/null | wc -l | tr -d ' ')"
+echo "  plugins:          $(ls -1 "$OC_DIR/plugins" 2>/dev/null | wc -l | tr -d ' ')"
+echo "  bin:              $(ls -1 "$OC_DIR/bin" 2>/dev/null | wc -l | tr -d ' ')"
 
-# Show skills from skills.sh
-if [[ -f "skills-manifest.json" ]] && command -v jq >/dev/null 2>&1; then
-  local_count=$(jq -r '.categories | to_entries[] | select(.value.install == true) | .value.skills[].name' skills-manifest.json 2>/dev/null | wc -l | tr -d ' ')
-  echo "  skills.sh repos: $local_count (see skills-manifest.json)"
+echo
+echo "  Tooling:"
+need rtk             && echo "    rtk:        $(rtk --version 2>/dev/null | head -1)" || echo "    rtk:        MISSING"
+need codegraph       && echo "    codegraph:  present"                                                  || echo "    codegraph:  MISSING"
+need agent-browser   && echo "    agent-browser: $(agent-browser --version 2>/dev/null | head -1)"  || echo "    agent-browser: MISSING"
+
+if need opencode; then
+  echo
+  log "opencode MCP servers:"
+  opencode mcp list 2>/dev/null | grep -E "✓|✗|○" | sed 's/^/    /' || warn "opencode mcp list failed"
 fi
 echo
 
-# 10. Done
-ok "CEO Engineering System installed!"
+# ─── 14. Done ─────────────────────────────────────────────────────────────
+ok "CEO Engineering System ready!"
 echo
-echo -e "${GREEN}─────────────────────────────────────────────${NC}"
-echo -e "${GREEN}  Next steps:${NC}"
-echo -e "${GREEN}─────────────────────────────────────────────${NC}"
+echo -e "${BOLD}  Next steps:${NC}"
+echo "    1. Restart opencode (or start a new session) to load plugins/MCPs."
+echo "    2. /agent ceo        — switch to the CEO orchestrator"
+echo "    3. /feature \"...\"    — full pipeline (scout → architect → builder → reviewer → tester)"
+echo "    4. /commit /pr /review /test  — daily skills"
 echo
-echo "  1. Restart opencode / Claude Code (or start a new session)"
-echo "  2. Try a daily command:"
-echo "     /commit      - conventional commit"
-echo "     /pr          - open a pull request"
-echo "     /review      - review uncommitted changes"
-echo "     /pr-review   - review a PR by URL"
-echo "     /merge-conflict - resolve merge conflicts"
-echo "     /test        - run targeted tests"
+echo -e "  ${YELLOW}Re-run this script anytime to fill gaps. Use --skip-rtk/--skip-mcp/--skip-chrome to opt out.${NC}"
 echo
-echo "  3. Switch to the ceo agent (the orchestrator):"
-echo "     In opencode: type /agent ceo"
-echo "     Or set as default in ~/.config/opencode/opencode.json"
-echo
-echo "  4. Skills from skills.sh are auto-installed."
-echo "     Customize by editing skills-manifest.json then re-running setup."
-echo
-echo "  5. Read the docs:"
-echo "     docs/architecture.md          - the full system design"
-echo "     docs/commands.md              - all daily commands"
-echo "     docs/agent-matrix.md          - what each agent does"
-echo "     docs/skills-from-skills-sh.md - curated skills.sh skills"
-echo "     docs/efficiency-mcps.md       - RTK, Octocode, Caveman"
-echo
-echo -e "${YELLOW}To uninstall:${NC} ./uninstall.sh"
+echo -e "  ${YELLOW}Uninstall:${NC} curl -fsSL $REPO_RAW/uninstall.sh | bash"
 echo
