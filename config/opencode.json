@@ -41,10 +41,14 @@
         "edit": "deny",
         "bash": {
           "*": "deny",
-          "git *": "allow",
-          "codegraph *": "allow",
+          "ls *": "allow",
+          "cat *": "allow",
           "rg *": "allow",
-          "find *": "allow"
+          "find *": "allow",
+          "codegraph *": "allow",
+          "git status *": "allow",
+          "git log *": "allow",
+          "git diff *": "allow"
         },
         "webfetch": "allow"
       }
@@ -75,18 +79,28 @@
         "edit": "allow",
         "bash": {
           "*": "ask",
-          "git status *": "allow",
-          "git diff *": "allow",
-          "git add *": "allow",
-          "git commit *": "ask",
-          "git log *": "allow",
           "ls *": "allow",
           "cat *": "allow",
           "rg *": "allow",
           "find *": "allow",
           "mkdir *": "allow",
+          "cp *": "allow",
           "mv *": "allow",
-          "cp *": "allow"
+          "git status *": "allow",
+          "git diff *": "allow",
+          "git log *": "allow",
+          "git add *": "allow",
+          "git commit *": "ask",
+          "git push": "deny",
+          "git push *": "deny",
+          "git reset --hard": "deny",
+          "git clean *": "deny",
+          "rm -rf *": "deny",
+          "npm run *": "allow",
+          "pnpm run *": "allow",
+          "pnpm test *": "allow",
+          "pnpm typecheck *": "allow",
+          "pnpm lint *": "allow"
         },
         "task": {
           "*": "deny",
@@ -104,9 +118,9 @@
         "edit": "deny",
         "bash": {
           "*": "deny",
+          "rg *": "allow",
           "git diff *": "allow",
-          "git log *": "allow",
-          "rg *": "allow"
+          "git log *": "allow"
         }
       }
     },
@@ -120,6 +134,9 @@
         "edit": "deny",
         "bash": {
           "*": "ask",
+          "ls *": "allow",
+          "cat *": "allow",
+          "rg *": "allow",
           "npm test *": "allow",
           "npm run *": "allow",
           "pnpm test *": "allow",
@@ -129,15 +146,18 @@
           "pytest *": "allow",
           "go test *": "allow",
           "cargo test *": "allow",
-          "git *": "allow",
-          "ls *": "allow",
-          "cat *": "allow",
-          "rg *": "allow"
+          "git status *": "allow",
+          "git diff *": "allow",
+          "git log *": "allow",
+          "git commit *": "deny",
+          "git push": "deny",
+          "git push *": "deny",
+          "git reset *": "deny",
+          "git clean *": "deny"
         },
         "task": {
           "*": "deny",
-          "scout": "allow",
-          "builder": "allow"
+          "scout": "allow"
         }
       }
     },
@@ -178,19 +198,22 @@
         "edit": "ask",
         "bash": {
           "*": "ask",
+          "ls *": "allow",
+          "cat *": "allow",
+          "rg *": "allow",
           "git status *": "allow",
           "git diff *": "allow",
           "git log *": "allow",
           "git tag *": "ask",
+          "git push": "ask",
+          "git push *": "ask",
           "docker *": "ask",
           "kubectl *": "ask",
           "terraform *": "ask",
           "gh *": "ask",
           "npm run *": "allow",
           "pnpm run *": "allow",
-          "ls *": "allow",
-          "cat *": "allow",
-          "rg *": "allow"
+          "rm -rf *": "deny"
         },
         "task": {
           "*": "deny",
