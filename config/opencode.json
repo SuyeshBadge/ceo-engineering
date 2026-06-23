@@ -1,0 +1,185 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "default_agent": "ceo",
+  "instructions": [
+    "You are the CEO's Chief of Staff. Never write code in the primary agent.",
+    "Always spawn scout first before any other delegation.",
+    "Use the right-sized model: scout/doc-writer on cheap, builder/reviewer on code-tier, architect/security on premium.",
+    "Verify with tests/typecheck/lint before reporting done.",
+    "Report in CEO language with cost and risk flags."
+  ],
+  "agent": {
+    "ceo": {
+      "mode": "primary",
+      "model": "opencode-go/qwen3.7-plus",
+      "description": "Chief of Staff. Plans, delegates, reports. Never writes code directly. Use as default agent.",
+      "temperature": 0.2,
+      "steps": 60,
+      "permission": {
+        "edit": "deny",
+        "bash": {
+          "*": "ask",
+          "ls *": "allow",
+          "cat *": "allow",
+          "git status *": "allow",
+          "git diff *": "allow",
+          "git log *": "allow"
+        },
+        "task": {
+          "*": "deny",
+          "scout": "allow",
+          "architect": "allow",
+          "builder": "allow",
+          "reviewer": "allow",
+          "tester": "allow",
+          "security": "allow",
+          "doc-writer": "allow",
+          "devops": "allow"
+        }
+      }
+    },
+    "scout": {
+      "mode": "subagent",
+      "model": "opencode-go/mimo-v2.5",
+      "description": "Read-only search. Use FIRST before any builder/architect delegation. Returns concise context.",
+      "temperature": 0.1,
+      "steps": 15,
+      "permission": {
+        "edit": "deny",
+        "bash": {
+          "*": "deny",
+          "git *": "allow",
+          "codegraph *": "allow",
+          "rg *": "allow",
+          "find *": "allow"
+        },
+        "webfetch": "allow"
+      }
+    },
+    "architect": {
+      "mode": "subagent",
+      "model": "opencode-go/qwen3.7-max",
+      "description": "System design and trade-off analysis. Expensive — call once per task, cache result.",
+      "temperature": 0.3,
+      "steps": 25,
+      "permission": {
+        "edit": "deny",
+        "bash": { "*": "deny", "ls *": "allow", "cat *": "allow", "rg *": "allow" }
+      }
+    },
+    "builder": {
+      "mode": "subagent",
+      "model": "opencode-go/minimax-m3",
+      "description": "Writes code, implements features. Default executor after scout returns.",
+      "temperature": 0.2,
+      "steps": 50,
+      "permission": {
+        "edit": "allow",
+        "bash": {
+          "*": "ask",
+          "git status *": "allow",
+          "git diff *": "allow",
+          "git add *": "allow",
+          "git commit *": "ask",
+          "git log *": "allow",
+          "ls *": "allow",
+          "cat *": "allow",
+          "rg *": "allow",
+          "find *": "allow",
+          "mkdir *": "allow",
+          "mv *": "allow",
+          "cp *": "allow"
+        },
+        "task": { "*": "deny", "scout": "allow" }
+      }
+    },
+    "reviewer": {
+      "mode": "subagent",
+      "model": "opencode-go/minimax-m3",
+      "description": "Code review and quality gate. Read-only. Reports findings only, never edits.",
+      "temperature": 0.2,
+      "steps": 25,
+      "permission": {
+        "edit": "deny",
+        "bash": { "*": "deny", "git diff *": "allow", "git log *": "allow", "rg *": "allow" }
+      }
+    },
+    "tester": {
+      "mode": "subagent",
+      "model": "opencode-go/kimi-k2.7-code",
+      "description": "Runs the test suite, interprets failures, reports results. Loops with builder on failures.",
+      "temperature": 0.1,
+      "steps": 30,
+      "permission": {
+        "edit": "deny",
+        "bash": {
+          "*": "ask",
+          "npm test *": "allow",
+          "npm run *": "allow",
+          "pnpm test *": "allow",
+          "pnpm typecheck *": "allow",
+          "pnpm lint *": "allow",
+          "yarn test *": "allow",
+          "pytest *": "allow",
+          "go test *": "allow",
+          "cargo test *": "allow",
+          "git *": "allow",
+          "ls *": "allow",
+          "cat *": "allow",
+          "rg *": "allow"
+        },
+        "task": { "*": "deny", "scout": "allow", "builder": "allow" }
+      }
+    },
+    "security": {
+      "mode": "subagent",
+      "model": "opencode-go/glm-5.2",
+      "description": "Security audit. Read-only. Use when auth, payments, PII, uploads, or user-input handling is touched.",
+      "temperature": 0.1,
+      "steps": 25,
+      "permission": {
+        "edit": "deny",
+        "bash": { "*": "deny", "rg *": "allow", "git diff *": "allow" }
+      }
+    },
+    "doc-writer": {
+      "mode": "subagent",
+      "model": "opencode-go/mimo-v2.5",
+      "description": "Documentation, JSDoc, README updates. Cheap, fast. Spawn after tests pass.",
+      "temperature": 0.3,
+      "steps": 15,
+      "permission": {
+        "edit": "allow",
+        "bash": "deny",
+        "webfetch": "allow"
+      }
+    },
+    "devops": {
+      "mode": "subagent",
+      "model": "opencode-go/kimi-k2.7-code",
+      "description": "Deploy, infrastructure, CI/CD, env config. Elevated bash for ops work.",
+      "temperature": 0.2,
+      "steps": 30,
+      "permission": {
+        "edit": "ask",
+        "bash": {
+          "*": "ask",
+          "git status *": "allow",
+          "git diff *": "allow",
+          "git log *": "allow",
+          "git tag *": "ask",
+          "docker *": "ask",
+          "kubectl *": "ask",
+          "terraform *": "ask",
+          "gh *": "ask",
+          "npm run *": "allow",
+          "pnpm run *": "allow",
+          "ls *": "allow",
+          "cat *": "allow",
+          "rg *": "allow"
+        },
+        "task": { "*": "deny", "scout": "allow" }
+      }
+    }
+  }
+}
