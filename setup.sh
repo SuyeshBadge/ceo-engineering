@@ -330,18 +330,30 @@ install_skills_from_manifest() {
     fi
   done < <(jq -r '.categories | to_entries[] | select(.value.install == true) | .value.skills[] | select(.binary != null) | "\(.name)\t\(.binary)\t\(.install_hint // "")"' skills-manifest.json 2>/dev/null)
 
-  # 3) skills.sh repos
+  # 3) skills.sh repos (non-interactive: -y skip prompts, -g install global so opencode + CC find them)
   while IFS= read -r repo; do
     [[ -z "$repo" ]] && continue
     printf "  [skills.sh] %-26s " "$repo"
-    if npx --yes skills add "$repo" >/dev/null 2>&1; then
+    if npx --yes skills add "$repo" -y -g >/dev/null 2>&1; then
       echo -e "${GREEN}✓${NC}"
       ((ok_count++))
     else
-      echo -e "${YELLOW}⚠ manual: npx skills add $repo${NC}"
+      echo -e "${YELLOW}⚠ manual: npx -y skills add $repo -y -g${NC}"
       ((fail_count++))
     fi
   done < <(jq -r '.categories | to_entries[] | select(.value.bundled != true and .value.install == true) | .value.skills[] | select(.binary == null) | .name' skills-manifest.json 2>/dev/null)
+
+  # 4) caveman-mcp (opt-in MCP, requires uvx)
+  if need uvx; then
+    printf "  [caveman-mcp] %-26s " "caveman-mcp"
+    # Verify it boots (responds to MCP initialize)
+    if echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"ceo-setup","version":"1.0"}}}' \
+        | uvx --from caveman-mcp caveman-mcp 2>/dev/null | grep -q '"serverInfo"'; then
+      echo -e "${GREEN}✓ (opt-in, enable in opencode.json)${NC}"
+    else
+      echo -e "${YELLOW}⚠ caveman-mcp boot test failed${NC}"
+    fi
+  fi
 
   ok "$ok_count ready, $fail_count need manual install (see above)"
 }

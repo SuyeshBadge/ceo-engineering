@@ -54,6 +54,16 @@
         "mcp"
       ],
       "enabled": true
+    },
+    "caveman": {
+      "type": "local",
+      "command": [
+        "uvx",
+        "--from",
+        "caveman-mcp",
+        "caveman-mcp"
+      ],
+      "enabled": false
     }
   }
 }
