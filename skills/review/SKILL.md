@@ -19,9 +19,38 @@ Delegate to the **reviewer** subagent with the diff above. Group findings by sev
 
 If the diff is empty, say so and exit.
 
-Output format:
-- **Verdict**: APPROVE / REQUEST CHANGES / NEEDS DISCUSSION
-- **Blockers**: <list, must fix before merge>
-- **Majors**: <list, should fix>
-- **Minors**: <list, nits>
-- **Praise**: <1 thing done well>
+## Output (USER mode)
+
+```
+╭─────────────────────────────────────────────────────────────╮
+│ ✓ Review complete: APPROVE                                 │
+├─────────────────────────────────────────────────────────────┤
+│  3 files, 47 lines                                          │
+│                                                             │
+│  Blocker  (must fix before merge)                           │
+│    (none)                                                   │
+│                                                             │
+│  Major    (should fix)                                      │
+│    src/auth/login.ts:42   verifyToken missing null check   │
+│                                                             │
+│  Minor    (nit)                                             │
+│    src/auth/mfa.ts:23     prefer `const` over `let`         │
+│                                                             │
+│  Praise                                                     │
+│    tests/auth/mfa.test.ts comprehensive edge case coverage  │
+╰─────────────────────────────────────────────────────────────╯
+  → /commit     if you're happy
+  → /bug "X"   if a finding is worth fixing now
+```
+
+## Output (AGENT mode)
+
+```json
+{"status":"ok","action":"review","verdict":"APPROVE","files":3,"lines":47,"blockers":[],"majors":[{"file":"src/auth/login.ts","line":42,"msg":"verifyToken missing null check"}],"minors":[{"file":"src/auth/mfa.ts","line":23,"msg":"prefer const over let"}],"praise":[{"file":"tests/auth/mfa.test.ts","msg":"comprehensive edge case coverage"}]}
+```
+
+## Report
+
+```
+report status=ok action=review verdict=APPROVE files=3 lines=47 detail="1 major, 1 minor" next="/commit"
+```

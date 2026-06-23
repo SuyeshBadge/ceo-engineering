@@ -254,6 +254,13 @@ if [[ "$SETUP_OPENCODE" == true ]]; then
   chmod +x "$OC_DIR/loops/"*.sh
   ok "Loops installed"
 
+  # Bin (output format library, demo, status)
+  log "Installing bin scripts (output format library)..."
+  mkdir -p "$OC_DIR/bin"
+  cp bin/*.sh "$OC_DIR/bin/"
+  chmod +x "$OC_DIR/bin/"*.sh
+  ok "Bin installed (format.sh, demo.sh, status.sh, present.sh)"
+
   echo
 fi
 

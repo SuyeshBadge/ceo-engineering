@@ -53,6 +53,7 @@ fi
 
 [[ -d "$OC_DIR/hooks" ]] && rm -rf "$OC_DIR/hooks"
 [[ -d "$OC_DIR/loops" ]] && rm -rf "$OC_DIR/loops"
+[[ -d "$OC_DIR/bin" ]] && rm -rf "$OC_DIR/bin"
 ok "Removed opencode files"
 
 # Remove Claude Code symlinks

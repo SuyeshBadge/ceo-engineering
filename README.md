@@ -14,15 +14,45 @@ The installer:
 - Detects opencode and/or Claude Code
 - Backs up your existing config
 - Installs **9 subagents, 23 built-in skills, 5 hook scripts, 3 loop scripts**
+- Installs the **output format library** (USER + AGENT modes, demo, status)
 - Wires up **efficiency MCPs** (CodeGraph, Octocode, Context7, Grep.app)
 - Installs **~70+ curated skills from skills.sh** (process, frontend, backend, design, caveman)
 - Optionally installs **RTK** (Rust Token Killer — 60-90% bash savings)
 - Symlinks skills between editors
 - Preserves your existing MCP servers, design agents, and personal rules
 
+**See the first-run experience:** `bin/demo.sh`
+
+**Daily check-in:** `bin/status.sh`
+
 **To uninstall:** `curl -fsSL https://raw.githubusercontent.com/SuyeshBadge/ceo-engineering/main/uninstall.sh | bash`
 
 ## What You Get
+
+### Two output modes — same data, different presentations
+
+**USER mode** (what you see in the TUI):
+```
+╭─────────────────────────────────────────────────────────────╮
+│ ✓ Feature complete: Add MFA to login                       │
+├─────────────────────────────────────────────────────────────┤
+│  src/auth/login.ts:42-89    added MFA flow                 │
+│  src/auth/mfa.ts:1-156      new MFA module                  │
+│  tests/auth/mfa.test.ts     8 new tests                     │
+│                                                             │
+│  Tests       12/12 ✓      Typecheck     clean ✓            │
+│  Cost        $0.42        Time          4.2s               │
+│  Cache       78% hit      Model         minimax-m3          │
+╰─────────────────────────────────────────────────────────────╯
+  → /commit   /pr   /review   /refactor   /security
+```
+
+**AGENT mode** (what subagents read — 70% fewer tokens):
+```json
+{"status":"ok","action":"feature_complete","target":"add_mfa","files":[{"path":"src/auth/login.ts","lines":"42-89"}],"tests":"12/12","typecheck":"clean","cost_usd":0.42,"time_sec":4.2,"model":"minimax-m3","next":["commit","pr"]}
+```
+
+The same `report` call produces both. Auto-detects from TTY. See [docs/design-language.md](docs/design-language.md).
 
 ### The CEO Agent (primary)
 The Chief of Staff. You give it intent. It plans, delegates, and reports in CEO language. **It never writes code directly** — it spawns specialists.
@@ -91,6 +121,7 @@ See [docs/efficiency-mcps.md](docs/efficiency-mcps.md) for the full guide.
 ### Getting started
 - **[docs/opencode-guide.md](docs/opencode-guide.md)** — full opencode walkthrough
 - **[docs/claude-code-guide.md](docs/claude-code-guide.md)** — full Claude Code walkthrough
+- **[docs/design-language.md](docs/design-language.md)** — the dual output format (USER + AGENT)
 
 ### Reference
 - **[docs/architecture.md](docs/architecture.md)** — the system design

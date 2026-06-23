@@ -18,20 +18,33 @@ allowed-tools: Bash(gh:*), Bash(git:*), Read, Grep, Glob
 
 1. Confirm branch follows naming convention (e.g. `feat/`, `fix/`, `chore/`). Warn if not.
 2. Push the branch: `git push -u origin HEAD`
-3. Use `gh pr create` with:
-   - **Title**: conventional-commit style, ≤ 72 chars
-   - **Body**:
-     ```
-     ## Summary
-     - <2-3 bullets>
-     
-     ## Test plan
-     - [ ] <checkbox>
-     
-     ## Risks
-     - <breaking changes, perf concerns, migration steps>
-     ```
-   - **Reviewers**: from CODEOWNERS if present
-   - **Labels**: infer from commit types (feat → enhancement, fix → bug)
-4. Report: PR URL
-5. If the user has `/pr-review` set up, mention they can run it after CI passes
+3. Use `gh pr create` with conventional-commit style
+4. Report in the format below
+
+## Output (USER mode)
+
+```
+╭─────────────────────────────────────────────────────────────╮
+│ ✓ PR opened                                                 │
+├─────────────────────────────────────────────────────────────┤
+│  https://github.com/org/repo/pull/123                       │
+│                                                             │
+│  Title:  feat(auth): add MFA to login                       │
+│  Files:  3 changed (+47 / -12)                              │
+│  Labels: enhancement                                        │
+╰─────────────────────────────────────────────────────────────╯
+  → /pr-review <url>  (after CI passes)
+  → /merge-conflict   (if conflicts arise)
+```
+
+## Output (AGENT mode)
+
+```json
+{"status":"ok","action":"pr_opened","url":"https://github.com/org/repo/pull/123","title":"feat(auth): add MFA","files_changed":3,"additions":47,"deletions":12,"labels":["enhancement"]}
+```
+
+## Report
+
+```
+report status=ok action=pr_opened url="https://github.com/org/repo/pull/123" files=3 detail="feat(auth): add MFA" next="/pr-review,/merge-conflict"
+```
