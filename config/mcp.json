@@ -1,7 +1,7 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
-    "_comment": "Efficiency MCPs. RTK is the biggest win (60-90% on bash). Octocode + Caveman for semantic operations. Enable/disable per-agent in opencode.json.",
+    "_comment": "Default efficiency MCPs. RTK is the biggest win (60-90% on bash). Octocode + Caveman for semantic operations. Enable/disable per-agent in opencode.json.",
     "filesystem": {
       "type": "local",
       "command": ["npx", "-y", "@modelcontextprotocol/server-filesystem", "."],
@@ -14,8 +14,8 @@
       "headers": {
         "Authorization": "Bearer ${env:GITHUB_PAT}"
       },
-      "enabled": true,
-      "_why": "Issues, PRs, code search, repo metadata"
+      "enabled": false,
+      "_why": "Issues, PRs, code search, repo metadata. Requires GITHUB_PAT env var."
     },
     "context7": {
       "type": "remote",
@@ -31,15 +31,9 @@
     },
     "octocode": {
       "type": "local",
-      "command": ["npx", "-y", "@muvon/octocode"],
+      "command": ["npx", "-y", "octocode-mcp"],
       "enabled": true,
       "_why": "Semantic code indexer with GraphRAG. Natural language search over your codebase"
-    },
-    "caveman": {
-      "type": "local",
-      "command": ["uvx", "caveman-mcp"],
-      "enabled": false,
-      "_why": "Compresses markdown to terse prose. 65% token savings on docs. Opt-in (loses nuance)"
     },
     "gh-grep": {
       "type": "remote",
@@ -47,11 +41,11 @@
       "enabled": true,
       "_why": "Search public GitHub code by intent. Better than raw GitHub search for examples"
     },
-    "playwright": {
+    "agent-browser": {
       "type": "local",
-      "command": ["npx", "-y", "@playwright/mcp@latest"],
-      "enabled": false,
-      "_why": "Browser automation for E2E. Heavy — opt-in per agent"
+      "command": ["agent-browser", "mcp"],
+      "enabled": true,
+      "_why": "Vercel Labs' fast browser automation CLI. Native Rust, snapshot+refs workflow. Replaces Playwright for AI agents."
     }
   }
 }

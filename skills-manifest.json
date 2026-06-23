@@ -169,6 +169,29 @@
           "value": "low"
         }
       ]
+    },
+    "browser": {
+      "description": "Browser automation, E2E testing, web scraping. Bundled with the CEO Engineering System (no skills.sh install required).",
+      "tier": 1,
+      "install": true,
+      "bundled": true,
+      "skills": [
+        {
+          "name": "agent-browser",
+          "path": "skills/agent-browser/SKILL.md",
+          "description": "Vercel Labs' fast browser automation CLI + MCP server. Snapshot+refs workflow, native Rust, bundled skills for Electron/Slack/dogfood.",
+          "binary": "agent-browser",
+          "install_hint": "npm install -g agent-browser && agent-browser install",
+          "value": "critical"
+        },
+        {
+          "name": "e2e-testing",
+          "path": "skills/e2e-testing/SKILL.md",
+          "description": "End-to-end testing workflow. Stack-aware patterns for Nuxt/React/Supabase. Artifact collection, CI integration, debugging.",
+          "binary": null,
+          "value": "high"
+        }
+      ]
     }
   },
   "_skipped": {
