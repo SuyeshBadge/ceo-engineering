@@ -1,0 +1,195 @@
+{
+  "_comment": "Curated skills from skills.sh, organized by category and tier. Edit to customize. Tier 1 = installed by default. Tier 2 = opt-in. Tier 3 = specialized (install manually).",
+  "_install_command": "npx skills add <owner/repo>",
+  "categories": {
+    "process": {
+      "description": "Engineering process skills (planning, debugging, TDD, code review, subagent patterns)",
+      "tier": 1,
+      "install": true,
+      "skills": [
+        {
+          "name": "obra/superpowers",
+          "description": "14 skills covering the full engineering process: brainstorming, writing-plans, executing-plans, TDD, systematic-debugging, verification-before-completion, subagent-driven-development, dispatching-parallel-agents, using-git-worktrees, using-superpowers, requesting-code-review, receiving-code-review, finishing-a-development-branch, writing-skills",
+          "rank": "#97-254",
+          "installs": "200K-700K each",
+          "value": "critical"
+        }
+      ]
+    },
+    "typescript": {
+      "description": "TypeScript and modern web engineering skills",
+      "tier": 1,
+      "install": true,
+      "skills": [
+        {
+          "name": "mattpocock/skills",
+          "description": "13+ skills for TypeScript engineers: tdd, grill-me, grill-with-docs, improve-codebase-architecture, to-prd, to-issues, triage, diagnose, write-a-skill, zoom-out, caveman, handoff, prototype, setup-matt-pocock-skills",
+          "rank": "#24-139",
+          "installs": "200K-380K each",
+          "value": "critical"
+        }
+      ]
+    },
+    "caveman": {
+      "description": "Caveman prompting family — terse, token-efficient communication",
+      "tier": 1,
+      "install": true,
+      "skills": [
+        {
+          "name": "juliusbrussee/caveman",
+          "description": "7 skills: caveman (main), caveman-commit, caveman-review, caveman-compress, cavecrew (multi-agent caveman), caveman-stats, caveman-help",
+          "rank": "#42-235",
+          "installs": "130K-280K each",
+          "value": "high"
+        }
+      ]
+    },
+    "frontend": {
+      "description": "Modern frontend (React, Next.js, shadcn, design systems)",
+      "tier": 1,
+      "install": true,
+      "skills": [
+        {
+          "name": "vercel-labs/agent-skills",
+          "description": "Web design and Vercel-specific skills: web-design-guidelines, vercel-react-best-practices, agent-browser, vercel-composition-patterns, vercel-react-native-skills",
+          "rank": "#3-220",
+          "installs": "150K-580K each",
+          "value": "critical"
+        },
+        {
+          "name": "vercel-labs/next-skills",
+          "description": "Next.js best practices",
+          "rank": "#249",
+          "installs": "111K",
+          "value": "high"
+        },
+        {
+          "name": "shadcn/ui",
+          "description": "shadcn/ui component patterns",
+          "rank": "#143",
+          "installs": "203K",
+          "value": "high"
+        },
+        {
+          "name": "anthropics/skills",
+          "description": "Anthropic's skills: frontend-design, pdf, docx, pptx, xlsx, skill-creator",
+          "rank": "#2-245",
+          "installs": "115K-580K each",
+          "value": "high"
+        }
+      ]
+    },
+    "backend": {
+      "description": "Backend, database, infrastructure",
+      "tier": 1,
+      "install": true,
+      "skills": [
+        {
+          "name": "supabase/agent-skills",
+          "description": "Supabase + Postgres best practices: supabase, supabase-postgres-best-practices",
+          "rank": "#93, #231",
+          "installs": "135K-247K each",
+          "value": "high"
+        },
+        {
+          "name": "xixu-me/skills",
+          "description": "DevOps and tooling: github-actions-docs, develop-userscripts, openclaw-secure-linux-cloud, xget, xdrop, tzst",
+          "rank": "#98-145",
+          "installs": "110K-238K each",
+          "value": "medium"
+        }
+      ]
+    },
+    "design": {
+      "description": "UI/UX design polish and taste",
+      "tier": 1,
+      "install": true,
+      "skills": [
+        {
+          "name": "pbakaus/impeccable",
+          "description": "Impeccable UI/UX polish",
+          "rank": "#212",
+          "installs": "170K",
+          "value": "high"
+        },
+        {
+          "name": "leonxlnx/taste-skill",
+          "description": "8 design taste variants: design-taste-frontend, high-end-visual-design, redesign-existing-projects, minimalist-ui, full-output-enforcement, industrial-brutalist-ui, stitch-design-taste, gpt-taste",
+          "rank": "#210-246",
+          "installs": "110K-180K each",
+          "value": "high"
+        },
+        {
+          "name": "sleekdotdesign/agent-skills",
+          "description": "Sleek mobile app design",
+          "rank": "#69",
+          "installs": "267K",
+          "value": "high"
+        },
+        {
+          "name": "nextlevelbuilder/ui-ux-pro-max-skill",
+          "description": "UI/UX pro max",
+          "rank": "#109",
+          "installs": "232K",
+          "value": "high"
+        },
+        {
+          "name": "arvindrk/extract-design-system",
+          "description": "Extract design system from any website",
+          "rank": "#240",
+          "installs": "124K",
+          "value": "medium"
+        },
+        {
+          "name": "coreyhaines31/marketingskills",
+          "description": "Marketing skills: seo-audit, copywriting",
+          "rank": "#221, #232",
+          "installs": "134K-144K each",
+          "value": "medium"
+        }
+      ]
+    },
+    "utilities": {
+      "description": "General-purpose utility skills",
+      "tier": 2,
+      "install": false,
+      "skills": [
+        {
+          "name": "scrapegraphai/just-scrape",
+          "description": "Web scraping with natural language",
+          "rank": "#140",
+          "installs": "211K",
+          "value": "medium"
+        },
+        {
+          "name": "roin-orca/skills",
+          "description": "Simple skill authoring",
+          "rank": "#142",
+          "installs": "203K",
+          "value": "low"
+        }
+      ]
+    }
+  },
+  "_skipped": {
+    "_comment": "Intentionally not included. Too specific or off-topic for a general engineering setup.",
+    "categories": [
+      {
+        "name": "Azure-specific",
+        "reason": "Most engineers don't use Azure. Install individually if needed: npx skills add microsoft/azure-skills"
+      },
+      {
+        "name": "Lark/Feishu-specific",
+        "reason": "Only useful in Lark-using orgs. Install individually if needed."
+      },
+      {
+        "name": "Video/image generation",
+        "reason": "Off-topic for software engineering. agentspace-so and doany-ai skills are for creative work."
+      },
+      {
+        "name": "Paper reproduction",
+        "reason": "Specialized ML research skill. lllllllama/ai-paper-reproduction-skill"
+      }
+    ]
+  }
+}

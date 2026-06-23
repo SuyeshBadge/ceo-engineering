@@ -37,10 +37,19 @@ warn "Removing CEO files..."
 [[ -f "$OC_DIR/AGENTS.md" ]] && rm -f "$OC_DIR/AGENTS.md"
 [[ -d "$OC_DIR/agents" ]] && rm -rf "$OC_DIR/agents/ceo.md" "$OC_DIR/agents/scout.md" "$OC_DIR/agents/architect.md" "$OC_DIR/agents/builder.md" "$OC_DIR/agents/reviewer.md" "$OC_DIR/agents/tester.md" "$OC_DIR/agents/security.md" "$OC_DIR/agents/doc-writer.md" "$OC_DIR/agents/devops.md" 2>/dev/null || true
 
-# Remove skills
+# Remove local skills
 for skill in commit pr review pr-review merge-conflict test format lint typecheck branch sync explain doc changelog release hotfix clean feature bug refactor security mvp metrics; do
   [[ -d "$OC_DIR/skills/$skill" ]] && rm -rf "$OC_DIR/skills/$skill"
 done
+
+# Remove skills.sh installed skills (only those we installed, identified by our manifest)
+if [[ -f "skills-manifest.json" ]] && command -v jq >/dev/null 2>&1; then
+  while IFS= read -r repo; do
+    [[ -z "$repo" ]] && continue
+    skill_name=$(basename "$repo")
+    [[ -d "$OC_DIR/skills/$skill_name" ]] && rm -rf "$OC_DIR/skills/$skill_name"
+  done < <(jq -r '.categories | to_entries[] | select(.value.install == true) | .value.skills[].name' skills-manifest.json 2>/dev/null)
+fi
 
 [[ -d "$OC_DIR/hooks" ]] && rm -rf "$OC_DIR/hooks"
 [[ -d "$OC_DIR/loops" ]] && rm -rf "$OC_DIR/loops"

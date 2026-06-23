@@ -29,6 +29,60 @@ echo "  opencode dir: $OC_DIR"
 echo "  Claude Code dir: $CC_DIR"
 echo
 
+# Helper: install skills from skills.sh via the npx CLI
+install_skills_from_manifest() {
+  local target_dir="$1"
+  local manifest="skills-manifest.json"
+  [[ ! -f "$manifest" ]] && return 0
+
+  if ! command -v npx >/dev/null 2>&1; then
+    warn "npx not found — skipping skills.sh install. Run manually with: npx skills add <owner/repo>"
+    return 0
+  fi
+
+  log "Installing curated skills from skills.sh (see skills-manifest.json)..."
+
+  # Parse manifest and install tier-1 skills
+  local count=0
+  local failed=0
+  while IFS= read -r repo; do
+    [[ -z "$repo" ]] && continue
+    printf "  %-50s " "$repo"
+    if npx --yes skills add "$repo" >/dev/null 2>&1; then
+      echo -e "${GREEN}✓${NC}"
+      ((count++))
+    else
+      # Try alternative: direct git clone into the right path
+      local skill_name=$(basename "$repo")
+      local clone_url="https://github.com/$repo"
+      local target_skill_dir="$target_dir/skills/$skill_name"
+      if [[ -d "$target_skill_dir/SKILL.md" ]]; then
+        echo -e "${YELLOW}✓ (cached)${NC}"
+        ((count++))
+      elif git clone --depth 1 "$clone_url" "$TMP_DIR/skills-clone-$skill_name" >/dev/null 2>&1; then
+        # Try to find SKILL.md files and copy them
+        if find "$TMP_DIR/skills-clone-$skill_name" -name "SKILL.md" 2>/dev/null | head -1 > /dev/null; then
+          echo -e "${YELLOW}⚠ partial (manual install may be needed)${NC}"
+        else
+          echo -e "${YELLOW}⚠ (no SKILL.md found in repo)${NC}"
+        fi
+        ((failed++))
+      else
+        echo -e "${RED}✗ (install manually: npx skills add $repo)${NC}"
+        ((failed++))
+      fi
+    fi
+  done < <(jq -r '.categories | to_entries[] | select(.value.install == true) | .value.skills[].name' "$manifest" 2>/dev/null)
+
+  if [[ $count -gt 0 ]]; then
+    ok "Installed $count skills from skills.sh"
+  fi
+  if [[ $failed -gt 0 ]]; then
+    warn "$failed skills need manual install. See: https://skills.sh"
+    echo "  Manual install: npx skills add <owner/repo>"
+  fi
+}
+
 # 2. Check for required tools
 log "Checking dependencies..."
 for tool in curl git jq; do
@@ -183,7 +237,10 @@ if [[ "$SETUP_OPENCODE" == true ]]; then
     mkdir -p "$OC_DIR/skills/$skill_name"
     cp "$skill_dir/SKILL.md" "$OC_DIR/skills/$skill_name/"
   done
-  ok "Skills installed"
+  ok "23 local skills installed"
+
+  # Skills from skills.sh (curated)
+  install_skills_from_manifest "$OC_DIR"
 
   # Hooks
   log "Installing hook scripts..."
@@ -261,6 +318,12 @@ echo "  opencode agents: $(ls -1 "$OC_DIR/agents" 2>/dev/null | wc -l | tr -d ' 
 echo "  opencode skills: $(ls -1 "$OC_DIR/skills" 2>/dev/null | wc -l | tr -d ' ')"
 echo "  hooks: $(ls -1 "$OC_DIR/hooks" 2>/dev/null | wc -l | tr -d ' ')"
 echo "  loops: $(ls -1 "$OC_DIR/loops" 2>/dev/null | wc -l | tr -d ' ')"
+
+# Show skills from skills.sh
+if [[ -f "skills-manifest.json" ]] && command -v jq >/dev/null 2>&1; then
+  local_count=$(jq -r '.categories | to_entries[] | select(.value.install == true) | .value.skills[].name' skills-manifest.json 2>/dev/null | wc -l | tr -d ' ')
+  echo "  skills.sh repos: $local_count (see skills-manifest.json)"
+fi
 echo
 
 # 10. Done
@@ -283,10 +346,15 @@ echo "  3. Switch to the ceo agent (the orchestrator):"
 echo "     In opencode: type /agent ceo"
 echo "     Or set as default in ~/.config/opencode/opencode.json"
 echo
-echo "  4. Read the docs:"
-echo "     docs/architecture.md  - the full system design"
-echo "     docs/commands.md      - all daily commands"
-echo "     docs/agent-matrix.md  - what each agent does"
+echo "  4. Skills from skills.sh are auto-installed."
+echo "     Customize by editing skills-manifest.json then re-running setup."
+echo
+echo "  5. Read the docs:"
+echo "     docs/architecture.md          - the full system design"
+echo "     docs/commands.md              - all daily commands"
+echo "     docs/agent-matrix.md          - what each agent does"
+echo "     docs/skills-from-skills-sh.md - curated skills.sh skills"
+echo "     docs/efficiency-mcps.md       - RTK, Octocode, Caveman"
 echo
 echo -e "${YELLOW}To uninstall:${NC} ./uninstall.sh"
 echo

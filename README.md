@@ -13,8 +13,9 @@ curl -fsSL https://raw.githubusercontent.com/SuyeshBadge/ceo-engineering/main/se
 The installer:
 - Detects opencode and/or Claude Code
 - Backs up your existing config
-- Installs **9 subagents, 23 skills, 5 hook scripts, 3 loop scripts**
+- Installs **9 subagents, 23 built-in skills, 5 hook scripts, 3 loop scripts**
 - Wires up **efficiency MCPs** (CodeGraph, Octocode, Context7, Grep.app)
+- Installs **~70+ curated skills from skills.sh** (process, frontend, backend, design, caveman)
 - Optionally installs **RTK** (Rust Token Killer — 60-90% bash savings)
 - Symlinks skills between editors
 - Preserves your existing MCP servers, design agents, and personal rules
@@ -39,7 +40,7 @@ The Chief of Staff. You give it intent. It plans, delegates, and reports in CEO 
 | `doc-writer` | Documentation, JSDoc, READMEs | `mimo-v2.5` ($0.14/$0.28) |
 | `devops` | Deploy, CI, infra | `kimi-k2.7-code` ($0.95/$4.00) |
 
-### 23 Daily-Work Skills
+### 23 Built-in Daily-Work Skills
 
 | Group | Commands |
 |---|---|
@@ -48,6 +49,19 @@ The Chief of Staff. You give it intent. It plans, delegates, and reports in CEO 
 | **Branch & sync** | `/branch` `/sync` `/clean` |
 | **Release & docs** | `/changelog` `/release` `/hotfix` `/doc` |
 | **Understand & big work** | `/explain` `/feature` `/bug` `/refactor` `/mvp` `/metrics` |
+
+### 70+ Curated Skills from skills.sh (auto-installed)
+
+| Category | Source | What you get |
+|---|---|---|
+| **Process** | `obra/superpowers` | 14 skills (TDD, debugging, planning, subagent patterns, code review) |
+| **TypeScript** | `mattpocock/skills` | 13+ skills (grill-me, tdd, architecture, prototype, handoff) |
+| **Caveman** | `juliusbrussee/caveman` | 7 skills (terse prompting family) |
+| **Frontend** | `vercel-labs/agent-skills`, `vercel-labs/next-skills`, `shadcn/ui`, `anthropics/skills` | React, Next.js, shadcn, design |
+| **Backend** | `supabase/agent-skills`, `xixu-me/skills` | Postgres, Supabase, GitHub Actions |
+| **Design** | `pbakaus/impeccable`, `leonxlnx/taste-skill`, `sleekdotdesign`, `ui-ux-pro-max`, `extract-design-system`, `coreyhaines31/marketingskills` | UI/UX polish, design taste, SEO |
+
+See [docs/skills-from-skills-sh.md](docs/skills-from-skills-sh.md) for the full curated list.
 
 ### Loop Patterns
 
@@ -84,6 +98,7 @@ See [docs/efficiency-mcps.md](docs/efficiency-mcps.md) for the full guide.
 - **[docs/commands.md](docs/commands.md)** — all daily commands
 - **[docs/cost-analysis.md](docs/cost-analysis.md)** — model & cost breakdown
 - **[docs/efficiency-mcps.md](docs/efficiency-mcps.md)** — RTK, Octocode, Caveman, etc.
+- **[docs/skills-from-skills-sh.md](docs/skills-from-skills-sh.md)** — curated skills from skills.sh
 - **[docs/glossary.md](docs/glossary.md)** — terms defined
 
 ### Practical
