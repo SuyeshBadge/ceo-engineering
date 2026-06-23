@@ -10,11 +10,13 @@ A platform-agnostic AI engineering setup for **opencode** and **Claude Code** th
 curl -fsSL https://raw.githubusercontent.com/SuyeshBadge/ceo-engineering/main/setup.sh | bash
 ```
 
-That's it. The installer:
+The installer:
 - Detects opencode and/or Claude Code
 - Backs up your existing config
-- Installs 9 subagents, 23 skills, 5 hook scripts, 3 loop scripts
-- Wires everything together with symlinks (skills shared between editors)
+- Installs **9 subagents, 23 skills, 5 hook scripts, 3 loop scripts**
+- Wires up **efficiency MCPs** (CodeGraph, Octocode, Context7, Grep.app)
+- Optionally installs **RTK** (Rust Token Killer — 60-90% bash savings)
+- Symlinks skills between editors
 - Preserves your existing MCP servers, design agents, and personal rules
 
 **To uninstall:** `curl -fsSL https://raw.githubusercontent.com/SuyeshBadge/ceo-engineering/main/uninstall.sh | bash`
@@ -39,49 +41,54 @@ The Chief of Staff. You give it intent. It plans, delegates, and reports in CEO 
 
 ### 23 Daily-Work Skills
 
-| Command | What it does |
+| Group | Commands |
 |---|---|
-| `/commit` | Conventional commit with pre-commit checks |
-| `/pr` | Open a pull request |
-| `/review` | Review uncommitted changes |
-| `/pr-review <url>` | Review a PR by URL or number |
-| `/merge-conflict` | Resolve merge conflicts intelligently |
-| `/test` | Run targeted tests |
-| `/format` | Format code |
-| `/lint` | Run linter |
-| `/typecheck` | Run typecheck |
-| `/branch <name>` | Create properly-named branch |
-| `/sync` | Sync with main, rebase |
-| `/explain <target>` | Explain a file or function |
-| `/doc` | Generate/update docs |
-| `/changelog` | Update CHANGELOG.md |
-| `/release` | Cut a release |
-| `/hotfix` | Emergency fix branch |
-| `/clean` | Clean up merged branches |
-| `/feature <desc>` | Full feature pipeline |
-| `/bug <desc>` | Bug fix with reproduction test |
-| `/refactor <scope>` | Behavior-preserving refactor |
-| `/security` | Security audit of changes |
-| `/mvp <idea>` | Ralph loop — fire-and-forget build |
-| `/metrics` | Show session cost & throughput |
+| **Commit & ship** | `/commit` `/pr` `/pr-review` `/review` `/merge-conflict` |
+| **Test & verify** | `/test` `/format` `/lint` `/typecheck` `/security` |
+| **Branch & sync** | `/branch` `/sync` `/clean` |
+| **Release & docs** | `/changelog` `/release` `/hotfix` `/doc` |
+| **Understand & big work** | `/explain` `/feature` `/bug` `/refactor` `/mvp` `/metrics` |
 
 ### Loop Patterns
 
-- **`/feature`** — orchestrator → scout → architect → builder → reviewer → tester → doc-writer → commit
+- **`/feature`** — full orchestrator pipeline
 - **`/mvp`** — Ralph Wiggum persistent loop for greenfield (L3)
 - **`loops/tdd-loop.sh`** — Red-green-refactor TDD loop (L1)
-- **`loops/ralph.sh`** — Run any prompt in a persistent loop
 
-## Cost (with opencode-go subscription)
+### Efficiency MCPs (cut cost 3-5×)
 
-~$0.69 per feature pipeline (8-10 subagent invocations). Heavy usage (8 features/week) ≈ $22/month, well under the $60 cap.
+| Tool | Savings | What |
+|---|---|---|
+| **RTK** (Rust Token Killer) | 60-90% on bash | CLI proxy that filters noisy output |
+| **CodeGraph** | 10-50× on search | Graph-indexed code search |
+| **Octocode** | 10-50× on search | Semantic code indexer with GraphRAG |
+| **Caveman** | 65% on markdown | Compresses docs to terse prose |
+| **Context7** | n/a | Live library docs (kills hallucinations) |
+| **Grep.app** | n/a | Public GitHub code search |
+
+See [docs/efficiency-mcps.md](docs/efficiency-mcps.md) for the full guide.
+
+## Cost (with opencode-go + RTK + Octocode + Caveman)
+
+~$0.10-0.15 per feature pipeline (down from $0.69 bare). Heavy usage (8 features/week) ≈ $3-5/month.
 
 ## Documentation
 
-- [docs/architecture.md](docs/architecture.md) — the system design
-- [docs/agent-matrix.md](docs/agent-matrix.md) — what each agent does
-- [docs/commands.md](docs/commands.md) — all daily commands
-- [docs/cost-analysis.md](docs/cost-analysis.md) — model & cost breakdown
+### Getting started
+- **[docs/opencode-guide.md](docs/opencode-guide.md)** — full opencode walkthrough
+- **[docs/claude-code-guide.md](docs/claude-code-guide.md)** — full Claude Code walkthrough
+
+### Reference
+- **[docs/architecture.md](docs/architecture.md)** — the system design
+- **[docs/agent-matrix.md](docs/agent-matrix.md)** — what each agent does
+- **[docs/commands.md](docs/commands.md)** — all daily commands
+- **[docs/cost-analysis.md](docs/cost-analysis.md)** — model & cost breakdown
+- **[docs/efficiency-mcps.md](docs/efficiency-mcps.md)** — RTK, Octocode, Caveman, etc.
+- **[docs/glossary.md](docs/glossary.md)** — terms defined
+
+### Practical
+- **[docs/workflows.md](docs/workflows.md)** — 15 end-to-end recipes
+- **[docs/troubleshooting.md](docs/troubleshooting.md)** — when things go wrong
 
 ## License
 

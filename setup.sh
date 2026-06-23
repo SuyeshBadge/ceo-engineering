@@ -107,6 +107,31 @@ cd "$TMP_DIR"
 ok "Downloaded"
 echo
 
+# 6.5. Install RTK (Rust Token Killer) — biggest token savings win
+if command -v brew >/dev/null 2>&1; then
+  if ! command -v rtk >/dev/null 2>&1; then
+    log "Installing RTK (Rust Token Killer) — 60-90% bash savings..."
+    if brew install rtk 2>/dev/null; then
+      ok "RTK installed"
+    else
+      warn "RTK install via brew failed — install manually: https://github.com/rtk-ai/rtk"
+    fi
+  else
+    ok "RTK already installed"
+  fi
+fi
+
+# Initialize RTK hook for whichever editors we found
+if command -v rtk >/dev/null 2>&1; then
+  if [[ "$SETUP_OPENCODE" == true ]]; then
+    rtk init -g --opencode 2>/dev/null && ok "RTK opencode hook installed" || warn "RTK opencode hook failed"
+  fi
+  if [[ "$SETUP_CLAUDE" == true ]]; then
+    rtk init -g 2>/dev/null && ok "RTK Claude Code hook installed" || warn "RTK Claude Code hook failed"
+  fi
+  echo
+fi
+
 # 7. Install opencode config
 if [[ "$SETUP_OPENCODE" == true ]]; then
   log "Installing opencode config..."

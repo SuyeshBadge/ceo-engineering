@@ -1,10 +1,12 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
+    "_comment": "Efficiency MCPs. RTK is the biggest win (60-90% on bash). Octocode + Caveman for semantic operations. Enable/disable per-agent in opencode.json.",
     "filesystem": {
       "type": "local",
       "command": ["npx", "-y", "@modelcontextprotocol/server-filesystem", "."],
-      "enabled": true
+      "enabled": true,
+      "_why": "Bounded file access — safer than letting agent read anywhere"
     },
     "github": {
       "type": "remote",
@@ -12,12 +14,44 @@
       "headers": {
         "Authorization": "Bearer ${env:GITHUB_PAT}"
       },
-      "enabled": true
+      "enabled": true,
+      "_why": "Issues, PRs, code search, repo metadata"
     },
     "context7": {
       "type": "remote",
       "url": "https://mcp.context7.com/mcp",
-      "enabled": true
+      "enabled": true,
+      "_why": "Live library docs — kills hallucinations on library APIs"
+    },
+    "codegraph": {
+      "type": "local",
+      "command": ["codegraph", "serve", "--mcp"],
+      "enabled": true,
+      "_why": "Code-aware search via graph index. 1-2 KB answers instead of 50 KB grep dumps"
+    },
+    "octocode": {
+      "type": "local",
+      "command": ["npx", "-y", "@muvon/octocode"],
+      "enabled": true,
+      "_why": "Semantic code indexer with GraphRAG. Natural language search over your codebase"
+    },
+    "caveman": {
+      "type": "local",
+      "command": ["uvx", "caveman-mcp"],
+      "enabled": false,
+      "_why": "Compresses markdown to terse prose. 65% token savings on docs. Opt-in (loses nuance)"
+    },
+    "gh-grep": {
+      "type": "remote",
+      "url": "https://mcp.grep.app",
+      "enabled": true,
+      "_why": "Search public GitHub code by intent. Better than raw GitHub search for examples"
+    },
+    "playwright": {
+      "type": "local",
+      "command": ["npx", "-y", "@playwright/mcp@latest"],
+      "enabled": false,
+      "_why": "Browser automation for E2E. Heavy — opt-in per agent"
     }
   }
 }
