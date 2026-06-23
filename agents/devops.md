@@ -1,5 +1,4 @@
 ---
-name: devops
 mode: subagent
 model: opencode-go/kimi-k2.7-code
 description: Deploy, infrastructure, CI/CD, env config. Elevated bash for ops work.

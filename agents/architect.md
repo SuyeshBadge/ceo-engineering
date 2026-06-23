@@ -1,5 +1,4 @@
 ---
-name: architect
 mode: subagent
 model: opencode-go/qwen3.7-max
 description: System design and trade-off analysis. Use ONLY for: features spanning >3 files, breaking API changes, "how should we..." questions. Expensive.

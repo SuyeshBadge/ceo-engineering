@@ -85,12 +85,12 @@ export const SafetyHooksPlugin: Plugin = async () => {
       }
     },
 
-    "session.start": async () => {
-      await runHook("audit.sh", { event: "session-start" })
+    "session.created": async () => {
+      await runHook("audit.sh", { event: "session.created" })
     },
 
-    "session.end": async () => {
-      await runHook("audit.sh", { event: "session-end" })
+    "session.idle": async () => {
+      await runHook("audit.sh", { event: "session.idle" })
     },
   }
 }

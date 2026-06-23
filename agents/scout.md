@@ -1,5 +1,4 @@
 ---
-name: scout
 mode: subagent
 model: opencode-go/mimo-v2.5
 description: Read-only codebase search. Use FIRST before any builder/architect. Returns 1-2 KB high-signal context.

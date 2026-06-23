@@ -1,51 +1,59 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
-    "_comment": "Default efficiency MCPs. RTK is the biggest win (60-90% on bash). Octocode + Caveman for semantic operations. Enable/disable per-agent in opencode.json.",
     "filesystem": {
       "type": "local",
-      "command": ["npx", "-y", "@modelcontextprotocol/server-filesystem", "."],
-      "enabled": true,
-      "_why": "Bounded file access — safer than letting agent read anywhere"
+      "command": [
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "."
+      ],
+      "enabled": true
     },
     "github": {
       "type": "remote",
       "url": "https://api.githubcopilot.com/mcp/",
       "headers": {
-        "Authorization": "Bearer ${env:GITHUB_PAT}"
+        "Authorization": "Bearer {env:GITHUB_PAT}"
       },
-      "enabled": false,
-      "_why": "Issues, PRs, code search, repo metadata. Requires GITHUB_PAT env var."
+      "enabled": false
     },
     "context7": {
       "type": "remote",
       "url": "https://mcp.context7.com/mcp",
-      "enabled": true,
-      "_why": "Live library docs — kills hallucinations on library APIs"
+      "enabled": true
     },
     "codegraph": {
       "type": "local",
-      "command": ["codegraph", "serve", "--mcp"],
-      "enabled": true,
-      "_why": "Code-aware search via graph index. 1-2 KB answers instead of 50 KB grep dumps"
+      "command": [
+        "codegraph",
+        "serve",
+        "--mcp"
+      ],
+      "enabled": true
     },
     "octocode": {
       "type": "local",
-      "command": ["npx", "-y", "octocode-mcp"],
-      "enabled": true,
-      "_why": "Semantic code indexer with GraphRAG. Natural language search over your codebase"
+      "command": [
+        "npx",
+        "-y",
+        "octocode-mcp"
+      ],
+      "enabled": true
     },
     "gh-grep": {
       "type": "remote",
       "url": "https://mcp.grep.app",
-      "enabled": true,
-      "_why": "Search public GitHub code by intent. Better than raw GitHub search for examples"
+      "enabled": true
     },
     "agent-browser": {
       "type": "local",
-      "command": ["agent-browser", "mcp"],
-      "enabled": true,
-      "_why": "Vercel Labs' fast browser automation CLI. Native Rust, snapshot+refs workflow. Replaces Playwright for AI agents."
+      "command": [
+        "agent-browser",
+        "mcp"
+      ],
+      "enabled": true
     }
   }
 }

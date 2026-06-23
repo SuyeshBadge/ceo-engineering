@@ -175,9 +175,9 @@ else
 fi
 echo
 
-# ─── 9. opencode dirs + agents + skills + hooks + loops + bin ─────────────
+# ─── 9. opencode dirs + agents + commands + skills + hooks + loops + bin ─
 hdr "7/9 — opencode config"
-mkdir -p "$OC_DIR"/{agents,skills,plugins,hooks,loops,bin,logs}
+mkdir -p "$OC_DIR"/{agents,commands,skills,plugins,hooks,loops,bin,logs}
 
 if [[ -d agents ]]; then
   log "Installing 9 agents..."
@@ -185,14 +185,33 @@ if [[ -d agents ]]; then
   ok "9 agents installed"
 fi
 
-if [[ -d skills ]]; then
-  log "Installing 23 built-in skills..."
-  for skill_dir in skills/*/; do
-    skill_name=$(basename "$skill_dir")
-    mkdir -p "$OC_DIR/skills/$skill_name"
-    cp "$skill_dir/SKILL.md" "$OC_DIR/skills/$skill_name/" 2>/dev/null || true
+# Commands (/commit, /test, /pr, ...) — opencode reads from commands/<name>.md
+if [[ -d commands ]]; then
+  log "Installing slash commands..."
+  cmd_count=0
+  for cmd_dir in commands/*/; do
+    [[ ! -d "$cmd_dir" ]] && continue
+    cmd_name=$(basename "$cmd_dir")
+    [[ -f "$cmd_dir/SKILL.md" ]] || continue
+    cp "$cmd_dir/SKILL.md" "$OC_DIR/commands/$cmd_name.md"
+    ((cmd_count++))
   done
-  ok "23 built-in skills installed"
+  ok "$cmd_count slash commands installed"
+fi
+
+# Agent skills (reference material loaded by the skill tool)
+if [[ -d skills ]]; then
+  log "Installing agent skills..."
+  skill_count=0
+  for skill_dir in skills/*/; do
+    [[ ! -d "$skill_dir" ]] && continue
+    skill_name=$(basename "$skill_dir")
+    [[ -f "$skill_dir/SKILL.md" ]] || continue
+    mkdir -p "$OC_DIR/skills/$skill_name"
+    cp "$skill_dir/SKILL.md" "$OC_DIR/skills/$skill_name/"
+    ((skill_count++))
+  done
+  ok "$skill_count agent skills installed"
 fi
 
 if [[ -d hooks ]]; then
@@ -324,7 +343,7 @@ echo
 # ─── 12. Claude Code config (optional) ────────────────────────────────────
 if [[ -d "$CC_DIR" ]] || need claude; then
   hdr "Claude Code (optional)"
-  mkdir -p "$CC_DIR/agents" "$CC_DIR/skills" "$CC_DIR/hooks"
+  mkdir -p "$CC_DIR/agents" "$CC_DIR/commands" "$CC_DIR/skills" "$CC_DIR/hooks"
   # Symlink AGENTS.md → CLAUDE.md
   if [[ -f "$OC_DIR/AGENTS.md" ]] && [[ ! -L "$CC_DIR/CLAUDE.md" ]]; then
     ln -sf "$OC_DIR/AGENTS.md" "$CC_DIR/CLAUDE.md"
@@ -336,6 +355,18 @@ if [[ -d "$CC_DIR" ]] || need claude; then
       [[ -f "$f" ]] && cp "$f" "$CC_DIR/agents/$(basename "$f")"
     done
     ok "Claude Code agents installed"
+  fi
+  # Slash commands (Claude Code reads from commands/<name>.md — same as opencode)
+  if [[ -d commands ]]; then
+    cc_cmd_count=0
+    for cmd_dir in commands/*/; do
+      [[ ! -d "$cmd_dir" ]] && continue
+      cmd_name=$(basename "$cmd_dir")
+      [[ -f "$cmd_dir/SKILL.md" ]] || continue
+      cp "$cmd_dir/SKILL.md" "$CC_DIR/commands/$cmd_name.md"
+      ((cc_cmd_count++))
+    done
+    ok "$cc_cmd_count slash commands installed for Claude Code"
   fi
   # Symlink skills
   for skill_dir in "$OC_DIR/skills"/*/; do
@@ -362,12 +393,17 @@ fi
 
 # ─── 13. Verify ───────────────────────────────────────────────────────────
 hdr "Verify"
-echo "  opencode agents:  $(ls -1 "$OC_DIR/agents" 2>/dev/null | wc -l | tr -d ' ')"
-echo "  opencode skills:  $(ls -1 "$OC_DIR/skills" 2>/dev/null | wc -l | tr -d ' ')"
-echo "  hooks:            $(ls -1 "$OC_DIR/hooks" 2>/dev/null | wc -l | tr -d ' ')"
-echo "  loops:            $(ls -1 "$OC_DIR/loops" 2>/dev/null | wc -l | tr -d ' ')"
-echo "  plugins:          $(ls -1 "$OC_DIR/plugins" 2>/dev/null | wc -l | tr -d ' ')"
-echo "  bin:              $(ls -1 "$OC_DIR/bin" 2>/dev/null | wc -l | tr -d ' ')"
+echo "  opencode agents:    $(ls -1 "$OC_DIR/agents" 2>/dev/null | wc -l | tr -d ' ')"
+echo "  opencode commands:  $(ls -1 "$OC_DIR/commands" 2>/dev/null | wc -l | tr -d ' ') (/commit, /test, /pr, ...)"
+echo "  opencode skills:    $(ls -1 "$OC_DIR/skills" 2>/dev/null | wc -l | tr -d ' ')"
+echo "  hooks:              $(ls -1 "$OC_DIR/hooks" 2>/dev/null | wc -l | tr -d ' ')"
+echo "  loops:              $(ls -1 "$OC_DIR/loops" 2>/dev/null | wc -l | tr -d ' ')"
+echo "  plugins:            $(ls -1 "$OC_DIR/plugins" 2>/dev/null | wc -l | tr -d ' ')"
+echo "  bin:                $(ls -1 "$OC_DIR/bin" 2>/dev/null | wc -l | tr -d ' ')"
+if [[ -d "$CC_DIR" ]]; then
+  echo "  Claude Code cmds:   $(ls -1 "$CC_DIR/commands" 2>/dev/null | wc -l | tr -d ' ')"
+  echo "  Claude Code skills: $(ls -1 "$CC_DIR/skills" 2>/dev/null | wc -l | tr -d ' ')"
+fi
 
 echo
 echo "  Tooling:"

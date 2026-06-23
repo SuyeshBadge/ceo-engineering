@@ -1,5 +1,4 @@
 ---
-name: builder
 mode: subagent
 model: opencode-go/minimax-m3
 description: Writes code, implements features. Default executor. Always spawned after scout returns.

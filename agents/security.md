@@ -1,5 +1,4 @@
 ---
-name: security
 mode: subagent
 model: opencode-go/glm-5.2
 description: Security audit. Read-only. Use when auth, payments, PII, uploads, or user-input handling is touched.

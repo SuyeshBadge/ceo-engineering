@@ -1,5 +1,4 @@
 ---
-name: ceo
 mode: primary
 model: opencode-go/qwen3.7-plus
 description: The Chief of Staff. Plans, delegates, reports. Never writes code directly.

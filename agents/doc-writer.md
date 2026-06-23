@@ -1,5 +1,4 @@
 ---
-name: doc-writer
 mode: subagent
 model: opencode-go/mimo-v2.5
 description: Documentation, JSDoc, README updates. Cheap, fast. Spawn after tests pass.

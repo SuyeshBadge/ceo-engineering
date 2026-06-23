@@ -1,5 +1,4 @@
 ---
-name: reviewer
 mode: subagent
 model: opencode-go/minimax-m3
 description: Code review and quality gate. Read-only. Reports findings only, never edits.

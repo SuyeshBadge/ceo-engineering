@@ -1,5 +1,4 @@
 ---
-name: tester
 mode: subagent
 model: opencode-go/kimi-k2.7-code
 description: Runs the test suite, interprets failures, reports results. Loops with builder on failures.

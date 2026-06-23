@@ -1,6 +1,13 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "default_agent": "ceo",
+  "instructions": [
+    "You are the CEO's Chief of Staff. Never write code in the primary agent.",
+    "Always spawn scout first before any other delegation.",
+    "Use the right-sized model: scout/doc-writer on cheap, builder/reviewer on code-tier, architect/security on premium.",
+    "Verify with tests/typecheck/lint before reporting done.",
+    "Report in CEO language with cost and risk flags."
+  ],
   "agent": {
     "ceo": {
       "mode": "primary",
@@ -197,6 +204,79 @@
           "scout": "allow"
         }
       }
+    }
+  },
+  "mcp": {
+    "filesystem": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "."
+      ],
+      "enabled": true,
+      "_why": "Bounded file access — safer than letting agent read anywhere"
+    },
+    "github": {
+      "type": "remote",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "Authorization": "Bearer ${env:GITHUB_PAT}"
+      },
+      "enabled": true,
+      "_why": "Issues, PRs, code search, repo metadata"
+    },
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp",
+      "enabled": true,
+      "_why": "Live library docs — kills hallucinations on library APIs"
+    },
+    "codegraph": {
+      "type": "local",
+      "command": [
+        "codegraph",
+        "serve",
+        "--mcp"
+      ],
+      "enabled": true,
+      "_why": "Code-aware search via graph index. 1-2 KB answers instead of 50 KB grep dumps"
+    },
+    "octocode": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@muvon/octocode"
+      ],
+      "enabled": true,
+      "_why": "Semantic code indexer with GraphRAG. Natural language search over your codebase"
+    },
+    "caveman": {
+      "type": "local",
+      "command": [
+        "uvx",
+        "caveman-mcp"
+      ],
+      "enabled": false,
+      "_why": "Compresses markdown to terse prose. 65% token savings on docs. Opt-in (loses nuance)"
+    },
+    "gh-grep": {
+      "type": "remote",
+      "url": "https://mcp.grep.app",
+      "enabled": true,
+      "_why": "Search public GitHub code by intent. Better than raw GitHub search for examples"
+    },
+    "playwright": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@playwright/mcp@latest"
+      ],
+      "enabled": false,
+      "_why": "Browser automation for E2E. Heavy — opt-in per agent"
     }
   }
 }
