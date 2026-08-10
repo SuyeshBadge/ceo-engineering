@@ -1,27 +1,84 @@
 import type { Plugin } from "@opencode-ai/plugin"
-import { spawn } from "node:child_process"
 
-const HOOKS_DIR = `${process.env.HOME}/.config/opencode/hooks`
+const HOOKS_DIR = decodeURIComponent(new URL("../hooks/", import.meta.url).pathname)
+const AUDIT_LOG_DIR = decodeURIComponent(new URL("../../opencode-audit/", import.meta.url).pathname)
 
-function runHook(script: string, payload: unknown): Promise<string> {
-  return new Promise((resolve) => {
-    try {
-      const child = spawn(`${HOOKS_DIR}/${script}`, {
-        shell: false,
-        stdio: ["pipe", "pipe", "pipe"],
-      })
-      let out = ""
-      let err = ""
-      child.stdout.on("data", (d) => (out += d.toString()))
-      child.stderr.on("data", (d) => (err += d.toString()))
-      child.on("error", () => resolve(""))
-      child.on("close", () => resolve(out + err))
-      child.stdin.write(JSON.stringify(payload ?? {}))
-      child.stdin.end()
-    } catch {
-      resolve("")
+type Shell = Parameters<Plugin>[0]["$"]
+
+type HookResult = {
+  stdout: string
+  stderr: string
+  exitCode: number | null
+  error?: string
+}
+
+async function runHook($: Shell, script: string, payload: unknown, environment?: Record<string, string>): Promise<HookResult> {
+  try {
+    const command = $`printf %s ${JSON.stringify(payload ?? {})} | ${`${HOOKS_DIR}${script}`}`.quiet().nothrow()
+    if (environment) command.env(environment)
+    const result = await command
+    return {
+      stdout: result.stdout.toString(),
+      stderr: result.stderr.toString(),
+      exitCode: result.exitCode,
     }
-  })
+  } catch (error) {
+    return {
+      stdout: "",
+      stderr: "",
+      exitCode: null,
+      error: error instanceof Error ? error.message : "unknown hook error",
+    }
+  }
+}
+
+async function logDenial($: Shell, label: string, reason: string, sessionID: string | undefined, denialPayload: Record<string, unknown>): Promise<void> {
+  await runHook(
+    $,
+    "audit.sh",
+    {
+      event: `${label}.denied`,
+      session_id: sessionID,
+      reason,
+      ...denialPayload,
+    },
+    { CEO_AUDIT_LOG: AUDIT_LOG_DIR },
+  )
+}
+
+async function enforceSafetyHook(
+  $: Shell,
+  result: HookResult,
+  label: string,
+  sessionID: string | undefined,
+  denialPayload: Record<string, unknown>,
+): Promise<void> {
+  if (result.error || result.exitCode !== 0) {
+    await logDenial($, label, "safety hook failed closed", sessionID, denialPayload)
+    throw new Error(`[${label}] safety hook failed closed`)
+  }
+
+  const output = `${result.stdout}${result.stderr}`.trim()
+  if (!output) return
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(output)
+  } catch {
+    await logDenial($, label, "malformed safety hook output; failed closed", sessionID, denialPayload)
+    throw new Error(`[${label}] malformed safety hook output; failed closed`)
+  }
+
+  const hookOutput = (parsed as { hookSpecificOutput?: { permissionDecision?: string; permissionDecisionReason?: string } })
+    ?.hookSpecificOutput
+  if (hookOutput?.permissionDecision === "deny") {
+    const reason = hookOutput.permissionDecisionReason ?? "blocked by safety hook"
+    await logDenial($, label, reason, sessionID, denialPayload)
+    throw new Error(`[${label}] ${reason}`)
+  }
+
+  await logDenial($, label, "unexpected non-deny safety hook output; failed closed", sessionID, denialPayload)
+  throw new Error(`[${label}] unexpected non-deny safety hook output; failed closed`)
 }
 
 function bashPayload(input: { tool: string }, output: { args?: { command?: string } }) {
@@ -32,65 +89,85 @@ function bashPayload(input: { tool: string }, output: { args?: { command?: strin
   }
 }
 
-function filePayload(input: { tool: string }, output: { args?: { filePath?: string } }) {
-  const filePath = output?.args?.filePath ?? ""
+type FileToolArgs = {
+  filePath?: string
+  path?: string
+}
+
+function filePayload(tool: string, args: FileToolArgs | undefined) {
+  const filePath = args?.filePath ?? args?.path ?? ""
   return {
-    tool_name: input.tool,
+    tool_name: tool,
     tool_input: { file_path: filePath, path: filePath },
     args: { filePath: filePath },
   }
 }
 
-export const SafetyHooksPlugin: Plugin = async () => {
+type TaskToolArgs = {
+  subagent_type?: string
+  subagentType?: string
+  description?: string
+  prompt?: string
+}
+
+function taskPayload(input: { tool: string }, args: TaskToolArgs | undefined) {
+  const subagentType = args?.subagent_type ?? args?.subagentType ?? ""
+  const description = args?.description ?? ""
+  const prompt = args?.prompt ?? ""
+  return {
+    tool_name: input.tool,
+    tool_input: { subagent_type: subagentType, description, prompt },
+    args: { subagent_type: subagentType, description, prompt },
+  }
+}
+
+export const SafetyHooksPlugin: Plugin = async ({ $ }) => {
   return {
     "tool.execute.before": async (input, output) => {
       const tool = String(input?.tool ?? "").toLowerCase()
 
       if (tool === "bash" || tool === "shell") {
-        const result = await runHook("block-destructive.sh", bashPayload(input, output ?? {}))
-        if (result.includes('"permissionDecision": "deny"')) {
-          try {
-            const parsed = JSON.parse(result)
-            const reason = parsed?.hookSpecificOutput?.permissionDecisionReason ?? "blocked by safety hook"
-            throw new Error(`[block-destructive] ${reason}`)
-          } catch (e) {
-            if (e instanceof Error && e.message.startsWith("[block-destructive]")) throw e
-            throw new Error(`[block-destructive] command blocked by safety hook`)
-          }
-        }
+        const payload = bashPayload(input, output ?? {})
+        const result = await runHook($, "block-destructive.sh", payload)
+        await enforceSafetyHook($, result, "block-destructive", input.sessionID, payload)
         return
       }
 
       if (tool === "read" || tool === "write" || tool === "edit") {
-        const result = await runHook("env-protection.sh", filePayload(input, output ?? {}))
-        if (result.includes('"permissionDecision": "deny"')) {
-          try {
-            const parsed = JSON.parse(result)
-            const reason = parsed?.hookSpecificOutput?.permissionDecisionReason ?? "blocked"
-            throw new Error(`[env-protection] ${reason}`)
-          } catch (e) {
-            if (e instanceof Error && e.message.startsWith("[env-protection]")) throw e
-            throw new Error(`[env-protection] access blocked by safety hook`)
-          }
-        }
+        const payload = filePayload(input.tool, output.args as FileToolArgs | undefined)
+        const result = await runHook($, "env-protection.sh", payload)
+        await enforceSafetyHook($, result, "env-protection", input.sessionID, payload)
+        return
+      }
+
+      if (tool === "task") {
+        const payload = taskPayload(input, output?.args as TaskToolArgs | undefined)
+        const result = await runHook($, "guard-readonly-builder.sh", payload)
+        await enforceSafetyHook($, result, "guard-readonly-builder", input.sessionID, payload)
         return
       }
     },
 
-    "tool.execute.after": async (input, output) => {
-      const tool = String(input?.tool ?? "").toLowerCase()
+    "tool.execute.after": async (input) => {
+      const tool = String(input.tool ?? "").toLowerCase()
       if (tool === "write" || tool === "edit") {
-        await runHook("format-on-save.sh", filePayload(input, output ?? {}))
-        await runHook("run-typecheck.sh", filePayload(input, output ?? {}))
+        await runHook(
+          $,
+          "audit.sh",
+          {
+            event: "tool.execute.after",
+            session_id: input.sessionID,
+            ...filePayload(input.tool, input.args as FileToolArgs | undefined),
+          },
+          { CEO_AUDIT_LOG: AUDIT_LOG_DIR },
+        )
       }
     },
 
-    "session.created": async () => {
-      await runHook("audit.sh", { event: "session.created" })
-    },
-
-    "session.idle": async () => {
-      await runHook("audit.sh", { event: "session.idle" })
+    event: async ({ event }) => {
+      if (event.type === "session.created" || event.type === "session.idle") {
+        await runHook($, "audit.sh", { event: event.type, properties: event.properties }, { CEO_AUDIT_LOG: AUDIT_LOG_DIR })
+      }
     },
   }
 }

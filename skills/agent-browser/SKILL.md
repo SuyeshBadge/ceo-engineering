@@ -30,7 +30,7 @@ agent-browser screenshot shot.png     # capture
 agent-browser close                   # teardown
 ```
 
-### 2. MCP server (recommended for opencode/Claude agents)
+### 2. MCP server (recommended for opencode agents)
 
 Already wired by setup.sh. The MCP server exposes typed tools:
 - `agent_browser_open` / `agent_browser_close`

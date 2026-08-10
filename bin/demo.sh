@@ -92,7 +92,6 @@ user_header "Your setup"
 
 cat <<EOF
   ${C_CYAN}${ICON_DOT}${C_RESET} opencode:    ${C_BOLD}configured${C_RESET} (default agent: ceo)
-  ${C_CYAN}${ICON_DOT}${C_RESET} Claude Code: ${C_BOLD}configured${C_RESET} (CLAUDE.md symlinked to AGENTS.md)
   ${C_CYAN}${ICON_DOT}${C_RESET} RTK:         ${C_BOLD}$(command -v rtk >/dev/null && echo "installed (60-90% bash savings)" || echo "not installed — run: brew install rtk && rtk init -g")${C_RESET}
   ${C_CYAN}${ICON_DOT}${C_RESET} Skills:      ${C_BOLD}$(ls ~/.config/opencode/skills/ 2>/dev/null | wc -l | tr -d ' ') installed${C_RESET}
   ${C_CYAN}${ICON_DOT}${C_RESET} Agents:      ${C_BOLD}$(ls ~/.config/opencode/agents/ 2>/dev/null | wc -l | tr -d ' ') installed${C_RESET}

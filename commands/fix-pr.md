@@ -1,0 +1,8 @@
+---
+description: Route PR feedback repairs through CEO implementation and verification gates.
+agent: ceo
+---
+
+$ARGUMENTS
+
+Tier: standard, but with two explicit user checkpoints per the `fix-pr` skill — this command is a deliberate exception to the usual GitHub-comment full-automation rule (see AGENTS.md), scoped to this workflow only. Delegate the PR/comment fetch (`pull_request_read` via the `github` MCP server, `gh pr view --comments` as CLI fallback) to `scout-quick` (one narrow fetch; escalate to `scout` if the PR has enough threads that resolving them needs real cross-referencing), then `ceo` classifies every comment/thread as valid/invalid in a table (skill step 3) and **waits for the user to decide what actually gets addressed** before any code changes happen. Route only the user-approved items to `builder` for fixes, then `tester` for final checks. Before posting anything, `ceo` drafts the reply text for every thread (fixed and pushed-back-on alike, skill step 5) and **waits for explicit user approval** of that exact text. Only after approval does `builder` post each reply via `add_reply_to_pull_request_comment`/`add_issue_comment` (the `gh pr comment`/`gh api` inline-reply endpoint remain as a validated CLI fallback). `builder` can still edit (`update_pull_request`), merge (`merge_pull_request`), or review (`pull_request_review_write`) the PR directly if a fix genuinely calls for one of those, but that's outside this command's two-checkpoint scope — flag it and get explicit user go-ahead first rather than doing it as part of the reply-approval batch. Deleting a specific comment and the MCP server's repo/content-mutation tools remain out of scope and ungranted.

@@ -104,9 +104,6 @@ if ! command -v rtk >/dev/null 2>&1; then
   user_hint "Install RTK for 60-90% bash savings: brew install rtk && rtk init -g"
 fi
 
-if [[ ! -d "$HOME/.claude/CLAUDE.md" ]] && [[ ! -L "$HOME/.claude/CLAUDE.md" ]]; then
-  user_hint "Set up Claude Code too: ln -sf ~/.config/opencode/AGENTS.md ~/.claude/CLAUDE.md"
-fi
 echo
 
 # Footer
